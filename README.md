@@ -11,7 +11,7 @@ different projects.
 Install the package via Composer:
 
 ```shell
-$ composer require lusy/behat-contexts
+$ composer require --dev lusy/behat-contexts
 ```
 
 ## HalContext

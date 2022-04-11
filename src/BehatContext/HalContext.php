@@ -5,18 +5,62 @@ namespace BayWaReLusy\BehatContext;
 use Behat\Behat\Context\Context;
 use Psr\Http\Message\ResponseInterface;
 use Behat\Gherkin\Node\TableNode;
+use GuzzleHttp\Client as HttpClient;
 use Exception;
 use stdClass;
 
 class HalContext implements Context
 {
+    protected ?HttpClient $httpClient = null;
     protected ?ResponseInterface $lastResponse = null;
+
+    /**
+     * URL of the APIs webserver.
+     * @var string|null
+     */
+    protected ?string $baseUrl = null;
 
     /**
      * Path to the directory with example JSON files.
      * @var string
      */
     protected string $jsonFilesPath;
+
+    /**
+     * The headers to add to outgoing requests.
+     * @var array
+     */
+    protected array $headers = [];
+
+    /**
+     * The API Bearer token used for Authentication/Authorization.
+     * @var string|null
+     */
+    protected ?string $bearerToken = null;
+
+    /**
+     * The query string to add (in URI Template format).
+     * @var array
+     */
+    protected array $queryString = [];
+
+    /**
+     * @return string|null
+     */
+    public function getBaseUrl(): ?string
+    {
+        return $this->baseUrl;
+    }
+
+    /**
+     * @param string $baseUrl
+     * @return HalContext
+     */
+    public function setBaseUrl(string $baseUrl): HalContext
+    {
+        $this->baseUrl = $baseUrl;
+        return $this;
+    }
 
     /**
      * @return ResponseInterface|null
@@ -250,6 +294,76 @@ class HalContext implements Context
                 throw new \Exception("Property shouldn't have been found.");
             }
         }
+    }
+
+    /**
+     * @When I send a :method request to :url
+     * @When I send a :method request to :url with JSON body :body
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws Exception
+     */
+    public function iSendARequestToWithJsonBody(string $method, string $url, string $body)
+    {
+        $headers =
+            [
+                'Accept'       => 'application/hal+json',
+                'Content-Type' => 'application/json',
+            ];
+
+        // Check if custom headers have been added
+        if (!empty($this->headers)) {
+            $headers = array_merge($headers, $this->headers);
+        }
+
+        // Check if there is a token to add
+        if ($this->bearerToken) {
+            $headers['Authorization'] = 'Bearer ' . $this->bearerToken;
+        }
+
+        $params = [
+            'headers'     => $headers,
+            'verify'      => false,
+            'http_errors' => false,
+            'query'       => $this->getQueryString(),
+        ];
+
+        // Add data to http body
+        if (str_starts_with($body, 'file://')) {
+            $body = file_get_contents(__DIR__ . '/../_files/' . substr($body, 7));
+        }
+
+        $params['body'] = $body;
+
+        $this->setLastResponse($this->getHttpClient()->request(strtoupper($method), $url, $params));
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getQueryString(): array
+    {
+        return $this->queryString;
+    }
+
+    /**
+     * @throws Exception
+     */
+    protected function getHttpClient(): HttpClient
+    {
+        if (!$this->httpClient) {
+            if (!$this->getBaseUrl()) {
+                throw new Exception('Base URL of the APIs webserver needs to be set first.');
+            }
+
+            $this->httpClient = new HttpClient(
+                [
+                    'base_uri' => $this->getBaseUrl(),
+                    'verify'   => false,
+                ]
+            );
+        }
+
+        return $this->httpClient;
     }
 
     /**
