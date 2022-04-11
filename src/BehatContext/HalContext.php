@@ -356,12 +356,12 @@ class HalContext implements Context
 
     /**
      * @param string $key
-     * @param string $expectedValue
-     * @param string $actualValue
+     * @param mixed $expectedValue
+     * @param mixed $actualValue
      * @return void
      * @throws Exception
      */
-    protected function checkValue(string $key, string $expectedValue, string $actualValue): void
+    protected function checkValue(string $key, mixed $expectedValue, mixed $actualValue): void
     {
         if (str_starts_with($expectedValue, 'file://')) {
             $fileName      = $this->getJsonFilesPath() . DIRECTORY_SEPARATOR . substr($expectedValue, 7);
