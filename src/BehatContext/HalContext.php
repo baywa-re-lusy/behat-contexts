@@ -3,20 +3,20 @@
 namespace BayWaReLusy\BehatContext;
 
 use Behat\Behat\Context\Context;
-use GuzzleHttp\Psr7\Response as HttpResponse;
+use Psr\Http\Message\ResponseInterface;
 use Behat\Gherkin\Node\TableNode;
 use Exception;
 use stdClass;
 
 class HalContext implements Context
 {
-    protected ?HttpResponse $lastResponse = null;
+    protected ?ResponseInterface $lastResponse = null;
 
     /**
-     * @return HttpResponse|null
+     * @return ResponseInterface|null
      * @throws Exception
      */
-    public function getLastResponse(): ?HttpResponse
+    public function getLastResponse(): ?ResponseInterface
     {
         if (null === $this->lastResponse) {
             throw new Exception('No request sent yet.');
@@ -26,10 +26,10 @@ class HalContext implements Context
     }
 
     /**
-     * @param HttpResponse|null $lastResponse
+     * @param ResponseInterface|null $lastResponse
      * @return HalContext
      */
-    public function setLastResponse(?HttpResponse $lastResponse): HalContext
+    public function setLastResponse(?ResponseInterface $lastResponse): HalContext
     {
         $this->lastResponse = $lastResponse;
         return $this;
