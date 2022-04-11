@@ -10,9 +10,14 @@ class FeatureContext implements Context
 
     /**
      * @return HttpResponse|null
+     * @throws Exception
      */
     public function getLastResponse(): ?HttpResponse
     {
+        if (null === $this->lastResponse) {
+            throw new Exception('No request sent yet.');
+        }
+
         return $this->lastResponse;
     }
 
@@ -39,14 +44,14 @@ class FeatureContext implements Context
     }
 
     /**
-     * @Then the response status code should be :httpStatus
+     * @Then response status code should be :statusCode
      * @throws Exception
      */
-    public function theResponseStatusCodeShouldBe(string $httpStatus): void
+    public function responseStatusCodeShouldBe($statusCode)
     {
-        if ((string)$this->getLastResponse()->getStatusCode() !== $httpStatus) {
+        if ((string)$this->getLastResponse()->getStatusCode() !== $statusCode) {
             throw new \Exception(
-                'HTTP code does not match ' . $httpStatus .
+                'HTTP code does not match ' . $statusCode .
                 ' (actual: ' . $this->getLastResponse()->getStatusCode() . ')' . PHP_EOL
                 . $this->getLastResponse()->getBody()
             );
@@ -96,6 +101,100 @@ class FeatureContext implements Context
 
         if ($this->collectionContainsResource($collection, $expectedResource)) {
             throw new \Exception("Resource shouldn't have been found.");
+        }
+    }
+
+    /**
+     * @Then the response should be a JSON object containing:
+     * @throws Exception
+     */
+    public function theResponseShouldBeAJsonObjectContaining(TableNode $expectedObject)
+    {
+        $response = $this->getLastResponseJsonData(true);
+
+        foreach ($expectedObject->getRows() as $row) {
+            if (!array_key_exists($row[0], $response)) {
+                throw new \Exception(sprintf("Key %s not found.", $row[0]));
+            }
+
+            $this->checkValue($row[0], $row[1], $response[$row[0]]);
+        }
+    }
+
+    /**
+     * @Then the response should be a JSON object matching :json
+     * @throws Exception
+     */
+    public function theResponseShouldBeAJsonObjectMatching($json)
+    {
+        if (str_starts_with($json, 'file://')) {
+            $json = file_get_contents(__DIR__ . '/../_files/' . str_replace('file://', '', $json));
+        }
+
+        if ($this->getLastResponseJsonData(true) !== json_decode($json, true)) {
+            throw new Exception('Invalid answer.');
+        }
+    }
+
+    /**
+     * @Then response should contain an embedded collection of :number :collectionName with the following entries:
+     * @throws Exception
+     */
+    public function responseShouldContainAnEmbeddedCollectionOfWithTheFollowingEntries(
+        $number,
+        $collectionName,
+        TableNode $expectedCollectionEntries
+    ) {
+        $response = $this->getLastResponseJsonData();
+
+        foreach ($expectedCollectionEntries->getRowsHash() as $expectedCollectionKey => $expectedCollectionValue) {
+            $found = false;
+            foreach ($response->_embedded->$collectionName as $collectionEntry) {
+                if ($collectionEntry->$expectedCollectionKey === $expectedCollectionValue) {
+                    $found = true;
+                    break;
+                }
+            }
+
+            if (!$found) {
+                throw new \Exception("$expectedCollectionKey => $expectedCollectionValue not found in collection.");
+            }
+        }
+
+        if (count($response->_embedded->$collectionName) !== (int)$number) {
+            throw new \Exception(sprintf(
+                "Collection contains %s elements instead of %s",
+                count($response->_embedded->$collectionName),
+                $number
+            ));
+        }
+    }
+
+    /**
+     * @Then response should contain an embedded resource :resource with property :property and value :value
+     * @throws Exception
+     */
+    public function responseShouldContainAnEmbeddedResourceWithPropertyAndValue($resource, $property, $value)
+    {
+        $response = $this->getLastResponseJsonData();
+
+        if ($response->_embedded->$resource->$property != $value) {
+            throw new \Exception('Invalid embedded resource value.');
+        }
+    }
+
+    /**
+     * @Then the resource :id in collection :collection should not contain the property :property
+     * @throws Exception
+     */
+    public function theResourceInCollectionShouldNotContainTheProperty($id, $collection, $property)
+    {
+        $response = $this->getLastResponseJsonData();
+
+        foreach ($response->_embedded->$collection as $resource) {
+            if ($resource->id === $id && property_exists($resource, $property)) {
+                throw new \Exception("Property shouldn't have been found.");
+            }
         }
     }
 
@@ -194,5 +293,40 @@ class FeatureContext implements Context
         }
 
         return $value;
+    }
+
+    /**
+     * @param $key
+     * @param $expectedValue
+     * @param $actualValue
+     * @return void
+     * @throws Exception
+     */
+    protected function checkValue($key, $expectedValue, $actualValue): void
+    {
+        if (str_starts_with($expectedValue, 'file://')) {
+            $expectedValue = file_get_contents(__DIR__ . '/../_files/' . substr($expectedValue, 7));
+        }
+
+        json_decode($expectedValue);
+        if (json_last_error() == JSON_ERROR_NONE) {
+            $expectedValue = json_decode($expectedValue, true);
+        }
+
+        if ($expectedValue === '') {
+            $expectedValue = null;
+        }
+
+        if (is_string($expectedValue) && str_starts_with($expectedValue, 'match://')) {
+            if (!preg_match(substr($expectedValue, 8), $actualValue)) {
+                throw new \Exception(sprintf("Value %s doesn't match regexp %s.", $actualValue, $expectedValue));
+            }
+        } elseif ($actualValue != $expectedValue) {
+            throw new \Exception(sprintf(
+                "Wrong value %s for key %s",
+                var_export($actualValue, true),
+                $key
+            ));
+        }
     }
 }
