@@ -14,6 +14,12 @@ A Context to parse & test API responses in HAL format:
 
 ### Installation
 
+Install the package via Composer:
+
+```shell
+$ composer require lusy/behat-contexts
+```
+
 In your `FeatureContext`, add the following:
 
 ```php
@@ -49,4 +55,18 @@ And when you receive a reponse from your API, pass it to the context:
 $apiResponse = ...
 
 $this->getHalContext()->setLastResponse($apiResponse);
+```
+
+In your `behat.yml`, add the following:
+
+```yml
+default:
+  ...
+  suites:
+    api_features:
+      contexts:
+        - FeatureContext
+        ...
+        - BayWaReLusy\BehatContext\HalContext
+        ...
 ```
