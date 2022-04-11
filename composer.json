@@ -1,0 +1,30 @@
+{
+    "name": "lusy/behat-contexts",
+    "description": "BayWa r.e. Behat Contexts",
+    "type": "library",
+    "license": "proprietary",
+    "homepage": "https://baywa-re.com",
+    "config": {
+        "process-timeout": 5000,
+        "sort-packages": true,
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true
+        }
+    },
+    "require": {
+        "php": ">=8.0",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "ext-openssl": "*",
+        "composer-runtime-api": "^2.0",
+        "guzzlehttp/guzzle": "^7.4"
+    },
+    "require-dev": {
+        "behat/behat": "^3.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "BehatContexts\\": "/"
+        }
+    }
+}
