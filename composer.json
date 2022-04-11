@@ -17,16 +17,16 @@
         "ext-json": "*",
         "ext-openssl": "*",
         "composer-runtime-api": "^2.0",
-        "guzzlehttp/guzzle": "^7.4",
-        "squizlabs/php_codesniffer": "^3.6"
+        "guzzlehttp/guzzle": "^7.4"
     },
     "require-dev": {
         "behat/behat": "^3.8",
-        "phpstan/phpstan": "^1.5"
+        "phpstan/phpstan": "^1.5",
+        "squizlabs/php_codesniffer": "^3.6"
     },
     "autoload": {
         "psr-4": {
-            "BehatContexts\\": "/"
+            "BayWaReLusy\\BehatContext\\": "src/BehatContext"
         }
     }
 }

@@ -8,7 +8,7 @@ use Behat\Gherkin\Node\TableNode;
 use Exception;
 use stdClass;
 
-class FeatureContext implements Context
+class HalContext implements Context
 {
     protected ?HttpResponse $lastResponse = null;
 
