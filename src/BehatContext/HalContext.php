@@ -1,8 +1,12 @@
 <?php
 
+namespace BayWaReLusy\BehatContext;
+
 use Behat\Behat\Context\Context;
-use \GuzzleHttp\Psr7\Response as HttpResponse;
+use GuzzleHttp\Psr7\Response as HttpResponse;
 use Behat\Gherkin\Node\TableNode;
+use Exception;
+use stdClass;
 
 class FeatureContext implements Context
 {
@@ -47,7 +51,7 @@ class FeatureContext implements Context
      * @Then response status code should be :statusCode
      * @throws Exception
      */
-    public function responseStatusCodeShouldBe($statusCode)
+    public function responseStatusCodeShouldBe(string $statusCode): void
     {
         if ((string)$this->getLastResponse()->getStatusCode() !== $statusCode) {
             throw new \Exception(
@@ -61,8 +65,9 @@ class FeatureContext implements Context
     /**
      * @Then the response should contain exactly :nbEntries :typeEntries
      */
-    public function theResponseShouldContainExactly(string $nbEntries, string $typeEntries)
+    public function theResponseShouldContainExactly(string $nbEntries, string $typeEntries): void
     {
+        /** @var stdClass $response */
         $response = $this->getLastResponseJsonData();
 
         if (count($response->_embedded->$typeEntries) !== (int)$nbEntries) {
@@ -82,9 +87,14 @@ class FeatureContext implements Context
      * @Then the response collection :collectionName should contain the resource:
      * @throws Exception
      */
-    public function theResponseCollectionShouldContainTheResource($collectionName, TableNode $expectedResource): void
-    {
-        $collection = $this->getLastResponseJsonData()->_embedded->$collectionName;
+    public function theResponseCollectionShouldContainTheResource(
+        string $collectionName,
+        TableNode $expectedResource
+    ): void {
+        /** @var stdClass $response */
+        $response = $this->getLastResponseJsonData();
+
+        $collection = $response->_embedded->$collectionName;
 
         if (!$this->collectionContainsResource($collection, $expectedResource)) {
             throw new \Exception('Resource not found.');
@@ -95,9 +105,14 @@ class FeatureContext implements Context
      * @Then the response collection :collectionName should not contain the resource:
      * @throws Exception
      */
-    public function theResponseCollectionShouldNotContainTheResource($collectionName, TableNode $expectedResource)
-    {
-        $collection = $this->getLastResponseJsonData()->_embedded->$collectionName;
+    public function theResponseCollectionShouldNotContainTheResource(
+        string $collectionName,
+        TableNode $expectedResource
+    ): void {
+        /** @var stdClass $response */
+        $response = $this->getLastResponseJsonData();
+
+        $collection = $response->_embedded->$collectionName;
 
         if ($this->collectionContainsResource($collection, $expectedResource)) {
             throw new \Exception("Resource shouldn't have been found.");
@@ -108,8 +123,9 @@ class FeatureContext implements Context
      * @Then the response should be a JSON object containing:
      * @throws Exception
      */
-    public function theResponseShouldBeAJsonObjectContaining(TableNode $expectedObject)
+    public function theResponseShouldBeAJsonObjectContaining(TableNode $expectedObject): void
     {
+        /** @var string[] $response */
         $response = $this->getLastResponseJsonData(true);
 
         foreach ($expectedObject->getRows() as $row) {
@@ -125,10 +141,15 @@ class FeatureContext implements Context
      * @Then the response should be a JSON object matching :json
      * @throws Exception
      */
-    public function theResponseShouldBeAJsonObjectMatching($json)
+    public function theResponseShouldBeAJsonObjectMatching(string $json): void
     {
         if (str_starts_with($json, 'file://')) {
-            $json = file_get_contents(__DIR__ . '/../_files/' . str_replace('file://', '', $json));
+            $fileName = __DIR__ . '/../_files/' . str_replace('file://', '', $json);
+            $json     = file_get_contents($fileName);
+
+            if (!$json) {
+                throw new Exception(sprintf("File %s not found.", $fileName));
+            }
         }
 
         if ($this->getLastResponseJsonData(true) !== json_decode($json, true)) {
@@ -141,10 +162,11 @@ class FeatureContext implements Context
      * @throws Exception
      */
     public function responseShouldContainAnEmbeddedCollectionOfWithTheFollowingEntries(
-        $number,
-        $collectionName,
+        string $number,
+        string $collectionName,
         TableNode $expectedCollectionEntries
-    ) {
+    ): void {
+        /** @var stdClass $response */
         $response = $this->getLastResponseJsonData();
 
         foreach ($expectedCollectionEntries->getRowsHash() as $expectedCollectionKey => $expectedCollectionValue) {
@@ -174,8 +196,12 @@ class FeatureContext implements Context
      * @Then response should contain an embedded resource :resource with property :property and value :value
      * @throws Exception
      */
-    public function responseShouldContainAnEmbeddedResourceWithPropertyAndValue($resource, $property, $value)
-    {
+    public function responseShouldContainAnEmbeddedResourceWithPropertyAndValue(
+        string $resource,
+        string $property,
+        string $value
+    ): void {
+        /** @var stdClass $response */
         $response = $this->getLastResponseJsonData();
 
         if ($response->_embedded->$resource->$property != $value) {
@@ -187,11 +213,15 @@ class FeatureContext implements Context
      * @Then the resource :id in collection :collection should not contain the property :property
      * @throws Exception
      */
-    public function theResourceInCollectionShouldNotContainTheProperty($id, $collection, $property)
-    {
+    public function theResourceInCollectionShouldNotContainTheProperty(
+        string $id,
+        string $collectionName,
+        string $property
+    ): void {
+        /** @var stdClass $response */
         $response = $this->getLastResponseJsonData();
 
-        foreach ($response->_embedded->$collection as $resource) {
+        foreach ($response->_embedded->$collectionName as $resource) {
             if ($resource->id === $id && property_exists($resource, $property)) {
                 throw new \Exception("Property shouldn't have been found.");
             }
@@ -201,7 +231,7 @@ class FeatureContext implements Context
     /**
      * Return true if the given collection contains the expected resource, false otherwise.
      *
-     * @param array $collection
+     * @param stdClass[] $collection
      * @param TableNode $expectedResource
      * @return bool
      */
@@ -232,8 +262,11 @@ class FeatureContext implements Context
 
             if (
                 (!property_exists($receivedResource, $key) || $val != $receivedResource->$key) &&
-                (!property_exists($receivedResource, '_embedded') ||
-                    !property_exists($receivedResource->_embedded, $key) || $receivedResource->_embedded->$key->id != $val)
+                (
+                    !property_exists($receivedResource, '_embedded') ||
+                    !property_exists($receivedResource->_embedded, $key) ||
+                    $receivedResource->_embedded->$key->id != $val
+                )
             ) {
                 $resourceFound = false;
                 break;
@@ -245,7 +278,7 @@ class FeatureContext implements Context
 
     /**
      * @param bool $returnAsAssociativeArray
-     * @return stdClass|array
+     * @return stdClass|string[]
      * @throws Exception
      */
     protected function getLastResponseJsonData(bool $returnAsAssociativeArray = false): array|stdClass
@@ -273,10 +306,10 @@ class FeatureContext implements Context
     /**
      * Transform the given value into the correct type/content.
      *
-     * @param $value
+     * @param string $value
      * @return mixed
      */
-    protected function getOrCastValue($value): mixed
+    protected function getOrCastValue(string $value): mixed
     {
         if ($value === 'true') {
             $value = true;
@@ -287,30 +320,37 @@ class FeatureContext implements Context
         }
 
         // Check if value is JSON
-        $json = json_decode($value);
-        if (json_last_error() === JSON_ERROR_NONE && !preg_match('/^\d+$/', $value)) {
-            $value = $json;
+        if (is_string($value)) {
+            $json = json_decode($value);
+            if (json_last_error() === JSON_ERROR_NONE && !preg_match('/^\d+$/', $value)) {
+                $value = $json;
+            }
         }
 
         return $value;
     }
 
     /**
-     * @param $key
-     * @param $expectedValue
-     * @param $actualValue
+     * @param string $key
+     * @param string $expectedValue
+     * @param string $actualValue
      * @return void
      * @throws Exception
      */
-    protected function checkValue($key, $expectedValue, $actualValue): void
+    protected function checkValue(string $key, string $expectedValue, string $actualValue): void
     {
         if (str_starts_with($expectedValue, 'file://')) {
-            $expectedValue = file_get_contents(__DIR__ . '/../_files/' . substr($expectedValue, 7));
+            $fileName      = __DIR__ . '/../_files/' . substr($expectedValue, 7);
+            $expectedValue = file_get_contents($fileName);
+
+            if (!$expectedValue) {
+                throw new Exception(sprintf("File %s not found.", $fileName));
+            }
         }
 
         json_decode($expectedValue);
         if (json_last_error() == JSON_ERROR_NONE) {
-            $expectedValue = json_decode($expectedValue, true);
+            $expectedValue = json_decode((string)$expectedValue, true);
         }
 
         if ($expectedValue === '') {
