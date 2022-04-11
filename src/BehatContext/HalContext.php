@@ -27,9 +27,9 @@ class HalContext implements Context
 
     /**
      * @param HttpResponse|null $lastResponse
-     * @return FeatureContext
+     * @return HalContext
      */
-    public function setLastResponse(?HttpResponse $lastResponse): FeatureContext
+    public function setLastResponse(?HttpResponse $lastResponse): HalContext
     {
         $this->lastResponse = $lastResponse;
         return $this;
