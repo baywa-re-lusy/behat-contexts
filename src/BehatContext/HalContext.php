@@ -47,6 +47,24 @@ class HalContext implements Context
     /**
      * @return string|null
      */
+    public function getBearerToken(): ?string
+    {
+        return $this->bearerToken;
+    }
+
+    /**
+     * @param string|null $bearerToken
+     * @return HalContext
+     */
+    public function setBearerToken(?string $bearerToken): HalContext
+    {
+        $this->bearerToken = $bearerToken;
+        return $this;
+    }
+
+    /**
+     * @return string|null
+     */
     public function getBaseUrl(): ?string
     {
         return $this->baseUrl;
