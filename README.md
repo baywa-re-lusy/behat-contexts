@@ -6,19 +6,19 @@ BayWa r.e. Behat Contexts
 This repository provides you with different Behat Contexts containing common test steps that can be reused across
 different projects.
 
-## HalContext
-
-A Context to parse & test API responses in HAL format:
-- https://de.wikipedia.org/wiki/Hypertext_Application_Language
-- https://stateless.group/hal_specification.html
-
-### Installation
+## Installation
 
 Install the package via Composer:
 
 ```shell
 $ composer require lusy/behat-contexts
 ```
+
+## HalContext
+
+A Context to parse & test API responses in HAL format:
+- https://de.wikipedia.org/wiki/Hypertext_Application_Language
+- https://stateless.group/hal_specification.html
 
 In your `FeatureContext`, add the following:
 
