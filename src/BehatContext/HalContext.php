@@ -13,6 +13,12 @@ class HalContext implements Context
     protected ?ResponseInterface $lastResponse = null;
 
     /**
+     * Path to the directory with example JSON files.
+     * @var string
+     */
+    protected string $jsonFilesPath;
+
+    /**
      * @return ResponseInterface|null
      * @throws Exception
      */
@@ -32,6 +38,24 @@ class HalContext implements Context
     public function setLastResponse(?ResponseInterface $lastResponse): HalContext
     {
         $this->lastResponse = $lastResponse;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getJsonFilesPath(): string
+    {
+        return rtrim($this->jsonFilesPath, '/');
+    }
+
+    /**
+     * @param string $jsonFilesPath
+     * @return HalContext
+     */
+    public function setJsonFilesPath(string $jsonFilesPath): HalContext
+    {
+        $this->jsonFilesPath = $jsonFilesPath;
         return $this;
     }
 
@@ -144,7 +168,7 @@ class HalContext implements Context
     public function theResponseShouldBeAJsonObjectMatching(string $json): void
     {
         if (str_starts_with($json, 'file://')) {
-            $fileName = __DIR__ . '/../_files/' . str_replace('file://', '', $json);
+            $fileName = $this->getJsonFilesPath() . DIRECTORY_SEPARATOR . str_replace('file://', '', $json);
             $json     = file_get_contents($fileName);
 
             if (!$json) {
@@ -316,7 +340,7 @@ class HalContext implements Context
         } elseif ($value === 'false') {
             $value = false;
         } elseif (str_starts_with($value, 'file://')) {
-            $value = file_get_contents(__DIR__ . '/../_files/' . substr($value, 7));
+            $value = file_get_contents($this->getJsonFilesPath() . DIRECTORY_SEPARATOR . substr($value, 7));
         }
 
         // Check if value is JSON
@@ -340,7 +364,7 @@ class HalContext implements Context
     protected function checkValue(string $key, string $expectedValue, string $actualValue): void
     {
         if (str_starts_with($expectedValue, 'file://')) {
-            $fileName      = __DIR__ . '/../_files/' . substr($expectedValue, 7);
+            $fileName      = $this->getJsonFilesPath() . DIRECTORY_SEPARATOR . substr($expectedValue, 7);
             $expectedValue = file_get_contents($fileName);
 
             if (!$expectedValue) {
