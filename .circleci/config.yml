@@ -1,0 +1,36 @@
+version: 2.1
+
+jobs:
+  static:
+    docker:
+      - image: ${ACR_HOSTNAME_PD}/alpine-php8-build:latest
+        auth:
+          username: ${ACR_LOGIN_PD}
+          password: ${ACR_PASSWORD_PD}
+    working_directory: /var/www/html
+    steps:
+      - checkout
+      - run:
+          name: Composer install
+          command: |
+            ./composer.phar update -n
+      - run:
+          name: PHPStan
+          command: |
+            mkdir -p results/PHPStan
+            php -d memory_limit=4G vendor/bin/phpstan analyze --error-format=junit > results/PHPStan/result.xml; php -d memory_limit=4G vendor/bin/phpstan analyze
+      - run:
+          name: PHPCS
+          command: |
+            mkdir -p results/PHPCS
+            vendor/bin/phpcs src
+      - store_test_results:
+          path: results
+      - store_artifacts:
+          path: results
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - static
