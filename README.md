@@ -42,7 +42,10 @@ class FeatureContext implements
     {
         ...
         $this->gatherHalContext($scope);
-        $this->getHalContext()->setJsonFilesPath(<path to directory with JSON files>);
+        $this->getHalContext()
+            ->setJsonFilesPath(<path to directory with JSON files>)
+            ->setBaseUrl(<API Base URL>)
+            ->setBearerToken(<API Bearer Token>);
         ...
     }
 }
