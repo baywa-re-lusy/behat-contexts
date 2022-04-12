@@ -374,6 +374,14 @@ class HalContext implements Context
     }
 
     /**
+     * @Given header :name with value :value
+     */
+    public function headerWithValue(string $name, string $value): void
+    {
+        $this->headers[$name] = $value;
+    }
+
+    /**
      * @return string[]
      */
     public function getQueryString(): array
