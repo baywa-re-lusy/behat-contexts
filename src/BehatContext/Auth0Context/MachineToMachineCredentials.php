@@ -17,8 +17,8 @@ class MachineToMachineCredentials
         protected string $clientId,
         protected string $clientSecret
     ) {
-        if (!preg_match('/^[A-Za-z0-9+]$/', $clientName)) {
-            throw new Exception('Client name must have the format /^[A-Za-z0-9+]$/.');
+        if (!preg_match('/^[A-Za-z0-9]+$/', $clientName)) {
+            throw new Exception('Client name must have the format /^[A-Za-z0-9]+$/.');
         }
     }
 
