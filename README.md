@@ -23,6 +23,7 @@ default:
         ...
         - BayWaReLusy\BehatContext\HalContext
         - BayWaReLusy\BehatContext\Auth0Context
+        - BayWaReLusy\BehatContext\SqsContext
         ...
 ```
 
@@ -122,6 +123,42 @@ class FeatureContext implements
                 '<User Password>',
                 '<Auth0 Client ID>'
             ));
+        ...
+    }
+}
+```
+
+# SqsContext
+
+A Context to use AWS SQS compatible queues like e.g. ElasticMQ
+
+In your `FeatureContext`, add the following:
+```php
+use BayWaReLusy\BehatContext\SqsContext\SqsContextAwareTrait;
+use BayWaReLusy\BehatContext\SqsContext\SqsContextAwareInterface;
+use BayWaReLusy\BehatContext\SqsContext\QueueUrl;
+
+class FeatureContext implements
+    ...
+    SqsContextAwareInterface
+    ...
+{
+    use SqsContextAwareTrait;
+    
+    ...
+    
+    /**
+     * @BeforeScenario
+     */
+    public function gatherContexts(\Behat\Behat\Hook\Scope\BeforeScenarioScope $scope)
+    {
+        ...
+        $queueService = ... // <== instance of BayWaReLusy\QueueTools\QueueService
+        
+        $this->gatherSqsContext($scope);
+        $this->getSqsContext()
+            ->setQueueService($queueService)
+            ->addQueue(new QueueUrl('queueName', $queueUrl));
         ...
     }
 }
