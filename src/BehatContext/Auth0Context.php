@@ -2,6 +2,7 @@
 
 namespace BayWaReLusy\BehatContext;
 
+use BayWaReLusy\BehatContext\Auth0Context\MachineToMachineCredentials;
 use Behat\Behat\Context\Context;
 use Exception;
 use CurlHandle;
@@ -22,6 +23,16 @@ class Auth0Context implements Context
 
     /** @var string|null Auth0 Client ID */
     protected ?string $auth0ClientId = null;
+
+    /** @var MachineToMachineCredentials[] */
+    protected array $machineToMachineCredentials = [];
+
+    protected function addMachineToMachineCredentials(
+        MachineToMachineCredentials $machineToMachineCredentials
+    ): Auth0Context {
+        $this->machineToMachineCredentials[] = $machineToMachineCredentials;
+        return $this;
+    }
 
     /**
      * @return HalContext
@@ -145,6 +156,52 @@ class Auth0Context implements Context
     }
 
     /**
+     * @Given I am authenticated as Machine-to-Machine Client :machineToMachineClientName
+     * @throws Exception
+     */
+    public function iAmAuthenticatedAsMachineToMachineClient(string $machineToMachineClientName)
+    {
+        $machineToMachineCredentials = $this->getMachineToMachineCredentials($machineToMachineClientName);
+        $usernameHashKey             = 'AUTH0_ACCESS_TOKEN_' . strtoupper($machineToMachineClientName);
+
+        if (!getenv($usernameHashKey)) {
+            $curl = curl_init();
+
+            curl_setopt_array($curl, array(
+                CURLOPT_URL => "https://dev-jc40e-zf.eu.auth0.com/oauth/token",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => "",
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => "POST",
+                CURLOPT_POSTFIELDS =>
+                    "grant_type=client_credentials" .
+                    "&audience=" . $this->getAuth0Audience() .
+                    "&client_id=" . $machineToMachineCredentials->getClientId() .
+                    "&client_secret=" . $machineToMachineCredentials->getClientSecret(),
+                CURLOPT_HTTPHEADER => array(
+                    "Content-Type: application/json"
+                ),
+            ));
+
+            $response = curl_exec($curl);
+            $err = curl_error($curl);
+            curl_close($curl);
+
+            if ($err) {
+                throw new Exception(sprintf("cURL Error #:%s", $err));
+            } else {
+                $response = json_decode($response, true);
+                putenv($usernameHashKey . '=' . $response['access_token']);
+                $this->getHalContext()->setBearerToken($response['access_token']);
+            }
+        } else {
+            $this->getHalContext()->setBearerToken(getenv($usernameHashKey));
+        }
+    }
+
+    /**
      * @param string $username
      * @return CurlHandle|bool
      */
@@ -174,5 +231,19 @@ class Auth0Context implements Context
         );
 
         return $curl;
+    }
+
+    /**
+     * @throws Exception
+     */
+    protected function getMachineToMachineCredentials(string $machineToMachineClientName): MachineToMachineCredentials
+    {
+        foreach ($this->machineToMachineCredentials as $machineToMachineCredentials) {
+            if ($machineToMachineCredentials->getClientName() === $machineToMachineClientName) {
+                return $machineToMachineCredentials;
+            }
+        }
+
+        throw new Exception(sprintf("No M2M credentials found with name '%s'", $machineToMachineClientName));
     }
 }
