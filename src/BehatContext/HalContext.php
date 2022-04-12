@@ -327,7 +327,7 @@ class HalContext implements Context
      * @throws GuzzleException
      * @throws Exception
      */
-    public function iSendARequestToWithJsonBody(string $method, string $url, string $body): void
+    public function iSendARequestToWithJsonBody(string $method, string $url, string $body = null): void
     {
         // Replace placeholders in URL
         $url = $this->replacePlaceholdersInUrl($url);
@@ -356,11 +356,13 @@ class HalContext implements Context
         ];
 
         // Add data to http body
-        if (str_starts_with($body, 'file://')) {
-            $body = file_get_contents($this->getJsonFilesPath() . DIRECTORY_SEPARATOR . substr($body, 7));
-        }
+        if (!is_null($body)) {
+            if (str_starts_with($body, 'file://')) {
+                $body = file_get_contents($this->getJsonFilesPath() . DIRECTORY_SEPARATOR . substr($body, 7));
+            }
 
-        $params['body'] = $body;
+            $params['body'] = $body;
+        }
 
         $this->setLastResponse($this->getHttpClient()->request(strtoupper($method), $url, $params));
     }
