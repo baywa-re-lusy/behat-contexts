@@ -15,8 +15,7 @@ trait HalContextAwareTrait
      */
     public function gatherHalContext(BeforeScenarioScope $scope): void
     {
-        $environment      = $scope->getEnvironment();
-        $this->halContext = $environment->getContext(HalContext::class);
+        $this->halContext = $scope->getEnvironment()->getContext(HalContext::class);
     }
 
     public function getHalContext(): HalContext
