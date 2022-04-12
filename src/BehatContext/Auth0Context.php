@@ -27,7 +27,13 @@ class Auth0Context implements Context
     /** @var MachineToMachineCredentials[] */
     protected array $machineToMachineCredentials = [];
 
-    protected function addMachineToMachineCredentials(
+    /**
+     * Add credentials for a machine-to-machine connection to Auth0.
+     *
+     * @param MachineToMachineCredentials $machineToMachineCredentials
+     * @return Auth0Context
+     */
+    public function addMachineToMachineCredentials(
         MachineToMachineCredentials $machineToMachineCredentials
     ): Auth0Context {
         $this->machineToMachineCredentials[] = $machineToMachineCredentials;
