@@ -2,17 +2,17 @@
 
 namespace BayWaReLusy\BehatContext\Auth0Context;
 
-use Exception;
-
 class UserCredentials
 {
     /**
      * @param string $username
      * @param string $password
+     * @param string $clientId
      */
     public function __construct(
         protected string $username,
-        protected string $password
+        protected string $password,
+        protected string $clientId
     ) {
     }
 
@@ -30,5 +30,13 @@ class UserCredentials
     public function getPassword(): string
     {
         return $this->password;
+    }
+
+    /**
+     * @return string
+     */
+    public function getClientId(): string
+    {
+        return $this->clientId;
     }
 }

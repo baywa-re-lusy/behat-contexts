@@ -13,17 +13,11 @@ class Auth0Context implements Context
     /** @var HalContext */
     protected HalContext $halContext;
 
-    /** @var string|null Password of the Auth0 test user */
-    protected ?string $testUserPassword = null;
-
     /** @var string|null Auth0 Token Endpoint */
     protected ?string $auth0TokenEndpoint = null;
 
     /** @var string|null Auth0 Audience */
     protected ?string $auth0Audience = null;
-
-    /** @var string|null Auth0 Client ID */
-    protected ?string $auth0ClientId = null;
 
     /** @var MachineToMachineCredentials[] */
     protected array $machineToMachineCredentials = [];
@@ -81,24 +75,6 @@ class Auth0Context implements Context
     /**
      * @return string|null
      */
-    public function getTestUserPassword(): ?string
-    {
-        return $this->testUserPassword;
-    }
-
-    /**
-     * @param string|null $testUserPassword
-     * @return Auth0Context
-     */
-    public function setTestUserPassword(?string $testUserPassword): Auth0Context
-    {
-        $this->testUserPassword = $testUserPassword;
-        return $this;
-    }
-
-    /**
-     * @return string|null
-     */
     public function getAuth0TokenEndpoint(): ?string
     {
         return $this->auth0TokenEndpoint;
@@ -129,24 +105,6 @@ class Auth0Context implements Context
     public function setAuth0Audience(?string $auth0Audience): Auth0Context
     {
         $this->auth0Audience = $auth0Audience;
-        return $this;
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getAuth0ClientId(): ?string
-    {
-        return $this->auth0ClientId;
-    }
-
-    /**
-     * @param string|null $auth0ClientId
-     * @return Auth0Context
-     */
-    public function setAuth0ClientId(?string $auth0ClientId): Auth0Context
-    {
-        $this->auth0ClientId = $auth0ClientId;
         return $this;
     }
 
@@ -216,6 +174,7 @@ class Auth0Context implements Context
                 'audience'   => $this->getAuth0Audience(),
                 'username'   => urlencode($userCredentials->getUsername()),
                 'password'   => $userCredentials->getPassword(),
+                'client_id'  => $userCredentials->getClientId(),
             ];
 
         $curl = curl_init();
