@@ -366,6 +366,14 @@ class HalContext implements Context
     }
 
     /**
+     * @Given query string parameter :name with value :value
+     */
+    public function queryStringParameterWithValue(string $name, string $value): void
+    {
+        $this->queryString[$name] = $value;
+    }
+
+    /**
      * @return string[]
      */
     public function getQueryString(): array
