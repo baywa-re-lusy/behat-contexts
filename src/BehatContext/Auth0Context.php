@@ -172,7 +172,7 @@ class Auth0Context implements Context
             [
                 'grant_type' => 'password',
                 'audience'   => $this->getAuth0Audience(),
-                'username'   => urlencode($userCredentials->getUsername()),
+                'username'   => $userCredentials->getUsername(),
                 'password'   => $userCredentials->getPassword(),
                 'client_id'  => $userCredentials->getClientId(),
             ];
