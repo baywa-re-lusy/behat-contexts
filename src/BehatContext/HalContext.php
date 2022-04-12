@@ -3,6 +3,7 @@
 namespace BayWaReLusy\BehatContext;
 
 use Behat\Behat\Context\Context;
+use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Message\ResponseInterface;
 use Behat\Gherkin\Node\TableNode;
 use GuzzleHttp\Client as HttpClient;
@@ -28,7 +29,7 @@ class HalContext implements Context
 
     /**
      * The headers to add to outgoing requests.
-     * @var array
+     * @var string[]
      */
     protected array $headers = [];
 
@@ -40,9 +41,15 @@ class HalContext implements Context
 
     /**
      * The query string to add (in URI Template format).
-     * @var array
+     * @var string[]
      */
     protected array $queryString = [];
+
+    /**
+     * List of placeholder key/value pairs to replace in URL.
+     * @var string[]
+     */
+    protected array $placeholders = [];
 
     /**
      * @return string|null
@@ -317,11 +324,14 @@ class HalContext implements Context
     /**
      * @When I send a :method request to :url
      * @When I send a :method request to :url with JSON body :body
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws GuzzleException
      * @throws Exception
      */
-    public function iSendARequestToWithJsonBody(string $method, string $url, string $body)
+    public function iSendARequestToWithJsonBody(string $method, string $url, string $body): void
     {
+        // Replace placeholders in URL
+        $url = $this->replacePlaceholdersInUrl($url);
+
         $headers =
             [
                 'Accept'       => 'application/hal+json',
@@ -364,6 +374,19 @@ class HalContext implements Context
     }
 
     /**
+     * Add a placeholder to replace later in URL.
+     *
+     * @param string $key
+     * @param string $value
+     * @return $this
+     */
+    public function addPlaceholder(string $key, string $value): HalContext
+    {
+        $this->placeholders[$key] = $value;
+        return $this;
+    }
+
+    /**
      * @throws Exception
      */
     protected function getHttpClient(): HttpClient
@@ -382,6 +405,20 @@ class HalContext implements Context
         }
 
         return $this->httpClient;
+    }
+
+    protected function replacePlaceholdersInUrl(string $url): string
+    {
+        preg_match('/{([A-Z_0-9]+)}/', $url, $placeholders);
+
+        if (count($placeholders) > 1) {
+            array_shift($placeholders);
+            foreach ($placeholders as $placeholder) {
+                $url = str_replace('{' . $placeholder . '}', $this->placeholders[$placeholder], $url);
+            }
+        }
+
+        return $url;
     }
 
     /**

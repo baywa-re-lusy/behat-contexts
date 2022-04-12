@@ -9,7 +9,6 @@ different projects.
 ## Installation
 
 Install the package via Composer:
-
 ```shell
 $ composer require --dev lusy/behat-contexts
 ```
@@ -21,7 +20,6 @@ A Context to parse & test API responses in HAL format:
 - https://stateless.group/hal_specification.html
 
 In your `FeatureContext`, add the following:
-
 ```php
 use BayWaReLusy\BehatContext\HalContext\HalContextAwareTrait;
 use BayWaReLusy\BehatContext\HalContext\HalContextAwareInterface;
@@ -52,7 +50,6 @@ class FeatureContext implements
 ```
 
 And when you receive a reponse from your API, pass it to the context:
-
 ```php
 /** @var Psr\Http\Message\ResponseInterface */
 $apiResponse = ...
@@ -61,7 +58,6 @@ $this->getHalContext()->setLastResponse($apiResponse);
 ```
 
 In your `behat.yml`, add the following:
-
 ```yml
 default:
   ...
@@ -72,4 +68,14 @@ default:
         ...
         - BayWaReLusy\BehatContext\HalContext
         ...
+```
+
+You can add placeholders to your URL by writing:
+```gherkin
+When I send a "GET" request to "/resource-url/{MY_PLACEHOLDER}"
+```
+
+And add the corresponding value with:
+```php
+$this->getHalContext()->addPlaceholder('MY_PLACEHOLDER', '<placeholder value>');
 ```
