@@ -13,11 +13,11 @@ class Auth0Context implements Context
     /** @var HalContext */
     protected HalContext $halContext;
 
-    /** @var string|null Auth0 Token Endpoint */
-    protected ?string $auth0TokenEndpoint = null;
+    /** @var string Auth0 Token Endpoint */
+    protected string $auth0TokenEndpoint;
 
-    /** @var string|null Auth0 Audience */
-    protected ?string $auth0Audience = null;
+    /** @var string Auth0 Audience */
+    protected string $auth0Audience;
 
     /** @var MachineToMachineCredentials[] */
     protected array $machineToMachineCredentials = [];
@@ -44,7 +44,8 @@ class Auth0Context implements Context
      * @param UserCredentials $userCredentials
      * @return Auth0Context
      */
-    public function addUserCredentials(UserCredentials $userCredentials): Auth0Context {
+    public function addUserCredentials(UserCredentials $userCredentials): Auth0Context
+    {
         $this->userCredentials[] = $userCredentials;
         return $this;
     }
@@ -73,9 +74,9 @@ class Auth0Context implements Context
     }
 
     /**
-     * @return string|null
+     * @return string
      */
-    public function getAuth0TokenEndpoint(): ?string
+    public function getAuth0TokenEndpoint(): string
     {
         return $this->auth0TokenEndpoint;
     }
@@ -91,9 +92,9 @@ class Auth0Context implements Context
     }
 
     /**
-     * @return string|null
+     * @return string
      */
-    public function getAuth0Audience(): ?string
+    public function getAuth0Audience(): string
     {
         return $this->auth0Audience;
     }
@@ -112,15 +113,25 @@ class Auth0Context implements Context
      * @Given I am authenticated as user :username
      * @throws Exception
      */
-    public function iAmAuthenticatedAsUser(string $username)
+    public function iAmAuthenticatedAsUser(string $username): void
     {
         $userCredentials = $this->getUserCredentials($username);
         $usernameHashKey = 'AUTH0_ACCESS_TOKEN_' . strtoupper(md5($username));
 
         if (!getenv($usernameHashKey)) {
-            $curl     = $this->getAccessTokenForUser($userCredentials);
+            $curl = $this->getAccessTokenForUser($userCredentials);
+
+            if (!$curl instanceof CurlHandle) {
+                throw new Exception("Couldn't fetch Bearer Token.");
+            }
+
             $response = curl_exec($curl);
-            $err      = curl_error($curl);
+
+            if (!is_string($response)) {
+                throw new Exception(sprintf('Invalid curl response: %s', var_export($response, true)));
+            }
+
+            $err = curl_error($curl);
             curl_close($curl);
 
             if ($err) {
@@ -139,14 +150,24 @@ class Auth0Context implements Context
      * @Given I am authenticated as Machine-to-Machine Client :machineToMachineClientName
      * @throws Exception
      */
-    public function iAmAuthenticatedAsMachineToMachineClient(string $machineToMachineClientName)
+    public function iAmAuthenticatedAsMachineToMachineClient(string $machineToMachineClientName): void
     {
         $machineToMachineCredentials = $this->getMachineToMachineCredentials($machineToMachineClientName);
         $usernameHashKey             = 'AUTH0_ACCESS_TOKEN_' . strtoupper($machineToMachineClientName);
 
         if (!getenv($usernameHashKey)) {
-            $curl     = $this->getAccessTokenForMachineToMachineClient($machineToMachineCredentials);
+            $curl = $this->getAccessTokenForMachineToMachineClient($machineToMachineCredentials);
+
+            if (!$curl instanceof CurlHandle) {
+                throw new Exception("Couldn't fetch Bearer Token.");
+            }
+
             $response = curl_exec($curl);
+
+            if (!is_string($response)) {
+                throw new Exception(sprintf('Invalid curl response: %s', var_export($response, true)));
+            }
+
             $err = curl_error($curl);
             curl_close($curl);
 
@@ -204,6 +225,10 @@ class Auth0Context implements Context
         return $curl;
     }
 
+    /**
+     * @param string[] $postFields
+     * @return array<int, array<int, string>|bool|int|string|null>
+     */
     protected function getCurlOptions(array $postFields): array
     {
         return
