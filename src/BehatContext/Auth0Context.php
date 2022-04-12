@@ -3,6 +3,7 @@
 namespace BayWaReLusy\BehatContext;
 
 use BayWaReLusy\BehatContext\Auth0Context\MachineToMachineCredentials;
+use BayWaReLusy\BehatContext\Auth0Context\UserCredentials;
 use Behat\Behat\Context\Context;
 use Exception;
 use CurlHandle;
@@ -27,6 +28,9 @@ class Auth0Context implements Context
     /** @var MachineToMachineCredentials[] */
     protected array $machineToMachineCredentials = [];
 
+    /** @var UserCredentials[] */
+    protected array $userCredentials = [];
+
     /**
      * Add credentials for a machine-to-machine connection to Auth0.
      *
@@ -37,6 +41,17 @@ class Auth0Context implements Context
         MachineToMachineCredentials $machineToMachineCredentials
     ): Auth0Context {
         $this->machineToMachineCredentials[] = $machineToMachineCredentials;
+        return $this;
+    }
+
+    /**
+     * Add credentials for a Login/Password connection to Auth0.
+     *
+     * @param UserCredentials $userCredentials
+     * @return Auth0Context
+     */
+    public function addUserCredentials(UserCredentials $userCredentials): Auth0Context {
+        $this->userCredentials[] = $userCredentials;
         return $this;
     }
 
@@ -141,10 +156,11 @@ class Auth0Context implements Context
      */
     public function iAmAuthenticatedAsUser(string $username)
     {
+        $userCredentials = $this->getUserCredentials($username);
         $usernameHashKey = 'AUTH0_ACCESS_TOKEN_' . strtoupper(md5($username));
 
         if (!getenv($usernameHashKey)) {
-            $curl     = $this->getAccessToken($username);
+            $curl     = $this->getAccessTokenForUser($userCredentials);
             $response = curl_exec($curl);
             $err      = curl_error($curl);
             curl_close($curl);
@@ -171,26 +187,7 @@ class Auth0Context implements Context
         $usernameHashKey             = 'AUTH0_ACCESS_TOKEN_' . strtoupper($machineToMachineClientName);
 
         if (!getenv($usernameHashKey)) {
-            $curl = curl_init();
-
-            curl_setopt_array($curl, array(
-                CURLOPT_URL => "https://dev-jc40e-zf.eu.auth0.com/oauth/token",
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => "",
-                CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 30,
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => "POST",
-                CURLOPT_POSTFIELDS =>
-                    "grant_type=client_credentials" .
-                    "&audience=" . $this->getAuth0Audience() .
-                    "&client_id=" . $machineToMachineCredentials->getClientId() .
-                    "&client_secret=" . $machineToMachineCredentials->getClientSecret(),
-                CURLOPT_HTTPHEADER => array(
-                    "Content-Type: application/json"
-                ),
-            ));
-
+            $curl     = $this->getAccessTokenForMachineToMachineClient($machineToMachineCredentials);
             $response = curl_exec($curl);
             $err = curl_error($curl);
             curl_close($curl);
@@ -208,21 +205,49 @@ class Auth0Context implements Context
     }
 
     /**
-     * @param string $username
+     * @param UserCredentials $userCredentials
      * @return CurlHandle|bool
      */
-    protected function getAccessToken(string $username): CurlHandle|bool
+    protected function getAccessTokenForUser(UserCredentials $userCredentials): CurlHandle|bool
     {
         $postFields =
-            'grant_type=password' .
-            '&username=' . urlencode($username) .
-            '&password=' . $this->getTestUserPassword() .
-            '&audience=' . $this->getAuth0Audience() .
-            '&client_id=' . $this->getAuth0ClientId();
+            [
+                'grant_type' => 'password',
+                'audience'   => $this->getAuth0Audience(),
+                'username'   => urlencode($userCredentials->getUsername()),
+                'password'   => $userCredentials->getPassword(),
+            ];
 
         $curl = curl_init();
-        curl_setopt_array(
-            $curl,
+        curl_setopt_array($curl, $this->getCurlOptions($postFields));
+
+        return $curl;
+    }
+
+    /**
+     * @param MachineToMachineCredentials $machineToMachineCredentials
+     * @return CurlHandle|bool
+     */
+    protected function getAccessTokenForMachineToMachineClient(
+        MachineToMachineCredentials $machineToMachineCredentials
+    ): CurlHandle|bool {
+        $postFields =
+            [
+                'grant_type'    => 'client_credentials',
+                'audience'      => $this->getAuth0Audience(),
+                'client_id'     => $machineToMachineCredentials->getClientId(),
+                'client_secret' => $machineToMachineCredentials->getClientSecret(),
+            ];
+
+        $curl = curl_init();
+        curl_setopt_array($curl, $this->getCurlOptions($postFields));
+
+        return $curl;
+    }
+
+    protected function getCurlOptions(array $postFields): array
+    {
+        return
             [
                 CURLOPT_URL            => $this->getAuth0TokenEndpoint(),
                 CURLOPT_RETURNTRANSFER => true,
@@ -231,12 +256,9 @@ class Auth0Context implements Context
                 CURLOPT_TIMEOUT        => 30,
                 CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
                 CURLOPT_CUSTOMREQUEST  => 'POST',
-                CURLOPT_POSTFIELDS     => $postFields,
-                CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded']
-            ]
-        );
-
-        return $curl;
+                CURLOPT_POSTFIELDS     => json_encode($postFields),
+                CURLOPT_HTTPHEADER     => ['Content-Type: application/json']
+            ];
     }
 
     /**
@@ -251,5 +273,19 @@ class Auth0Context implements Context
         }
 
         throw new Exception(sprintf("No M2M credentials found with name '%s'", $machineToMachineClientName));
+    }
+
+    /**
+     * @throws Exception
+     */
+    protected function getUserCredentials(string $username): UserCredentials
+    {
+        foreach ($this->userCredentials as $userCredentials) {
+            if ($userCredentials->getUsername() === $username) {
+                return $userCredentials;
+            }
+        }
+
+        throw new Exception(sprintf("No User credentials found with username '%s'", $username));
     }
 }
