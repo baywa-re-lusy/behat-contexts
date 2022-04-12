@@ -7,6 +7,7 @@ use BayWaReLusy\QueueTools\QueueService;
 use Behat\Behat\Context\Context;
 use Behat\Gherkin\Node\TableNode;
 use Exception;
+use Ramsey\Uuid\Uuid;
 
 class SqsContext implements Context
 {
@@ -47,6 +48,21 @@ class SqsContext implements Context
     {
         $this->queueUrls[] = $queueUrl;
         return $this;
+    }
+
+    /**
+     * @Given a message in queue :queueName:
+     */
+    public function aMessageInQueue(string $queueName, TableNode $message): void
+    {
+        $queueUrl = $this->getQueueUrl($queueName);
+
+        $this->getQueueService()->sendMessage(
+            $queueUrl->getQueueUrl(),
+            (string)json_encode($message->getRowsHash()),
+            Uuid::uuid4()->toString(),
+            Uuid::uuid4()->toString()
+        );
     }
 
     /**
