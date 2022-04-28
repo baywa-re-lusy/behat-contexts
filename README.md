@@ -24,6 +24,7 @@ default:
         - BayWaReLusy\BehatContext\HalContext
         - BayWaReLusy\BehatContext\Auth0Context
         - BayWaReLusy\BehatContext\SqsContext
+        - BayWaReLusy\BehatContext\ConsoleContext
         ...
 ```
 
@@ -159,6 +160,36 @@ class FeatureContext implements
         $this->getSqsContext()
             ->setQueueService($queueService)
             ->addQueue(new QueueUrl('queueName', $queueUrl));
+        ...
+    }
+}
+```
+
+# ConsoleContext
+
+A Context containing steps to test console routes
+
+In your `FeatureContext`, add the following:
+```php
+use BayWaReLusy\BehatContext\ConsoleContext\ConsoleContextAwareTrait;
+use BayWaReLusy\BehatContext\ConsoleContext\ConsoleContextAwareInterface;
+
+class FeatureContext implements
+    ...
+    ConsoleContextAwareInterface
+    ...
+{
+    use ConsoleContextAwareTrait;
+    
+    ...
+    
+    /**
+     * @BeforeScenario
+     */
+    public function gatherContexts(\Behat\Behat\Hook\Scope\BeforeScenarioScope $scope)
+    {
+        ...
+        $this->gatherConsoleContext($scope);
         ...
     }
 }
