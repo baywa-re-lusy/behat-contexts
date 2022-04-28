@@ -168,6 +168,18 @@ class FeatureContext implements
 }
 ```
 
+To clear the queues before each Scenario, use the following code:
+```php
+/**
+ * @BeforeScenario
+ */
+public function purgeDatabaseAndCache(): void
+{
+    // Clear all queues
+    $this->sqsContext->clearAllQueues();
+}
+```
+
 # ConsoleContext
 
 A Context containing steps to test console routes
