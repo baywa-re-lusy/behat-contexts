@@ -173,7 +173,7 @@ To clear the queues before each Scenario, use the following code:
 /**
  * @BeforeScenario
  */
-public function purgeDatabaseAndCache(): void
+public function clearAllQueues(): void
 {
     // Clear all queues
     $this->sqsContext->clearAllQueues();
