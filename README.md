@@ -159,6 +159,9 @@ class FeatureContext implements
         $this->gatherSqsContext($scope);
         $this->getSqsContext()
             ->setQueueService($queueService)
+            ->setAwsRegion(<AWS Region>)
+            ->setAwsKey(<AWS Key>)
+            ->setAwsSecret(<AWS Secret>)
             ->addQueue(new QueueUrl('queueName', $queueUrl));
         ...
     }

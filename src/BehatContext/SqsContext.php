@@ -2,6 +2,7 @@
 
 namespace BayWaReLusy\BehatContext;
 
+use Aws\Sqs\SqsClient;
 use BayWaReLusy\BehatContext\SqsContext\QueueUrl;
 use BayWaReLusy\QueueTools\QueueService;
 use Behat\Behat\Context\Context;
@@ -13,6 +14,10 @@ class SqsContext implements Context
 {
     /** @var QueueUrl[]  */
     protected array $queueUrls = [];
+
+    protected ?string $awsRegion = null;
+    protected ?string $awsKey = null;
+    protected ?string $awsSecret = null;
 
     /** @var array<string, array<string, array<string, string>>> Queue messages */
     protected array $queueMessages = [];
@@ -39,6 +44,36 @@ class SqsContext implements Context
     }
 
     /**
+     * @param string $awsRegion
+     * @return SqsContext
+     */
+    public function setAwsRegion(string $awsRegion): SqsContext
+    {
+        $this->awsRegion = $awsRegion;
+        return $this;
+    }
+
+    /**
+     * @param string $awsKey
+     * @return SqsContext
+     */
+    public function setAwsKey(string $awsKey): SqsContext
+    {
+        $this->awsKey = $awsKey;
+        return $this;
+    }
+
+    /**
+     * @param string $awsSecret
+     * @return SqsContext
+     */
+    public function setAwsSecret(string $awsSecret): SqsContext
+    {
+        $this->awsSecret = $awsSecret;
+        return $this;
+    }
+
+    /**
      * Add a queue with its URL
      *
      * @param QueueUrl $queueUrl
@@ -48,6 +83,35 @@ class SqsContext implements Context
     {
         $this->queueUrls[] = $queueUrl;
         return $this;
+    }
+
+    /**
+     * Clear all registered queues.
+     *
+     * @return void
+     * @throws Exception
+     */
+    public function clearAllQueues(): void
+    {
+        if (is_null($this->awsRegion) || is_null($this->awsKey) || is_null($this->awsSecret)) {
+            throw new \Exception('AWS Credentials not set.');
+        }
+
+        // Create SQS client
+        $sqsClient = new SqsClient([
+            'version'     => '2012-11-05',
+            'region'      => $this->awsRegion,
+            'credentials' =>
+                [
+                    'key'    => $this->awsKey,
+                    'secret' => $this->awsSecret,
+                ]
+        ]);
+
+        // Clear all queues
+        foreach ($this->queueUrls as $queueUrl) {
+            $sqsClient->purgeQueue(['QueueUrl' => $queueUrl->getQueueUrl()]);
+        }
     }
 
     /**
