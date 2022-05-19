@@ -358,7 +358,13 @@ class HalContext implements Context
         // Add data to http body
         if (!is_null($body)) {
             if (str_starts_with($body, 'file://')) {
-                $body = file_get_contents($this->getJsonFilesPath() . DIRECTORY_SEPARATOR . substr($body, 7));
+                if( str_contains(substr($body, 7),DIRECTORY_SEPARATOR)) {
+                    $bodyParts = explode(DIRECTORY_SEPARATOR, substr($body, 7));
+                    $subFolder = $bodyParts[0];
+                    $body = file_get_contents($this->getJsonFilesPath() . DIRECTORY_SEPARATOR . $subFolder . DIRECTORY_SEPARATOR . $bodyParts[1]);
+                } else {
+                    $body = file_get_contents($this->getJsonFilesPath() . DIRECTORY_SEPARATOR . substr($body, 7));
+                }
             }
 
             $params['body'] = $body;
