@@ -7,7 +7,7 @@ use Behat\Behat\Hook\Scope\BeforeScenarioScope;
 
 trait AuthContextAwareTrait
 {
-    protected AuthContext $auth0Context;
+    protected AuthContext $authContext;
 
     /**
      * @BeforeScenario
@@ -15,11 +15,11 @@ trait AuthContextAwareTrait
      */
     public function gatherAuthContext(BeforeScenarioScope $scope): void
     {
-        $this->auth0Context = $scope->getEnvironment()->getContext(AuthContext::class);
+        $this->authContext = $scope->getEnvironment()->getContext(AuthContext::class);
     }
 
     public function getAuthContext(): AuthContext
     {
-        return $this->auth0Context;
+        return $this->authContext;
     }
 }

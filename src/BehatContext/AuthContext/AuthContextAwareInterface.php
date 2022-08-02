@@ -10,7 +10,7 @@ interface AuthContextAwareInterface
     /**
      * @BeforeScenario
      */
-    public function gatherAuth0Context(BeforeScenarioScope $scope): void;
+    public function gatherAuthContext(BeforeScenarioScope $scope): void;
 
-    public function getAuth0Context(): AuthContext;
+    public function getAuthContext(): AuthContext;
 }
