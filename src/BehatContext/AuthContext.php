@@ -2,8 +2,8 @@
 
 namespace BayWaReLusy\BehatContext;
 
-use BayWaReLusy\BehatContext\AuthContext\MachineToMachineCredentials;
-use BayWaReLusy\BehatContext\AuthContext\UserCredentials;
+use BayWaReLusy\BehatContext\Authentication\MachineToMachineCredentials;
+use BayWaReLusy\BehatContext\Authentication\UserCredentials;
 use Behat\Behat\Context\Context;
 use Exception;
 use CurlHandle;
