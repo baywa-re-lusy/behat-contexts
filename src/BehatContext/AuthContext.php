@@ -89,10 +89,10 @@ class AuthContext implements Context
     }
 
     /**
-     * @Given I am authenticated as user :username
+     * @Given I am authenticated as a user :username
      * @throws Exception
      */
-    public function iAmAuthenticatedAsUser(string $username): void
+    public function iAmAuthenticatedAsAUser(string $username): void
     {
         $userCredentials = $this->getUserCredentials($username);
         $usernameHashKey = 'AUTH_ACCESS_TOKEN_' . strtoupper(md5($username));
@@ -126,10 +126,10 @@ class AuthContext implements Context
     }
 
     /**
-     * @Given I am authenticated as Machine-to-Machine Client :machineToMachineClientName
+     * @Given I am authenticated as a Machine-to-Machine Client :machineToMachineClientName
      * @throws Exception
      */
-    public function iAmAuthenticatedAsMachineToMachineClient(string $machineToMachineClientName): void
+    public function iAmAuthenticatedAsAMachineToMachineClient(string $machineToMachineClientName): void
     {
         $machineToMachineCredentials = $this->getMachineToMachineCredentials($machineToMachineClientName);
         $usernameHashKey             = 'AUTH_ACCESS_TOKEN_' . strtoupper($machineToMachineClientName);
