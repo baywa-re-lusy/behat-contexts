@@ -208,6 +208,11 @@ class AuthContext implements Context
      */
     protected function getCurlOptions(array $postFields): array
     {
+        $postFieldsEncoded = [];
+        foreach ($postFields as $key => $value) {
+            $postFieldsEncoded[] = sprintf('%s=%s', $key, $value);
+        }
+
         return
             [
                 CURLOPT_URL            => $this->getTokenEndpoint(),
@@ -217,8 +222,8 @@ class AuthContext implements Context
                 CURLOPT_TIMEOUT        => 30,
                 CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
                 CURLOPT_CUSTOMREQUEST  => 'POST',
-                CURLOPT_POSTFIELDS     => json_encode($postFields),
-                CURLOPT_HTTPHEADER     => ['Content-Type: application/json']
+                CURLOPT_POSTFIELDS     => implode('&', $postFieldsEncoded),
+                CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded']
             ];
     }
 
