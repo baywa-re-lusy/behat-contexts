@@ -1,6 +1,6 @@
 <?php
 
-namespace BayWaReLusy\BehatContext\Auth0Context;
+namespace BayWaReLusy\BehatContext\AuthContext;
 
 class UserCredentials extends \BayWaReLusy\BehatContext\Authentication\UserCredentials
 {

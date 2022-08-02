@@ -88,9 +88,10 @@ A Context to login to Auth0 with Login/Password or as a Machine-to-Machine clien
 The `HalContext` needs to be initialized first.
 
 In your `FeatureContext`, add the following:
+
 ```php
-use BayWaReLusy\BehatContext\Auth0Context\Auth0ContextAwareTrait;
-use BayWaReLusy\BehatContext\Auth0Context\Auth0ContextAwareInterface;
+use BayWaReLusy\BehatContext\Auth0Context\AuthContextAwareTrait;
+use BayWaReLusy\BehatContext\Auth0Context\AuthContextAwareInterface;
 use BayWaReLusy\BehatContext\Auth0Context\MachineToMachineCredentials;
 use BayWaReLusy\BehatContext\Auth0Context\UserCredentials;
 
