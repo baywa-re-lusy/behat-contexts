@@ -13,6 +13,9 @@ class AuthContext implements Context
     /** @var HalContext */
     protected HalContext $halContext;
 
+    /** @var string Server Address */
+    protected string $serverAddress;
+
     /** @var string Token Endpoint */
     protected string $tokenEndpoint;
 
@@ -67,6 +70,24 @@ class AuthContext implements Context
     public function setHalContext(HalContext $halContext): AuthContext
     {
         $this->halContext = $halContext;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getServerAddress(): string
+    {
+        return $this->serverAddress;
+    }
+
+    /**
+     * @param string $serverAddress
+     * @return AuthContext
+     */
+    public function setServerAddress(string $serverAddress): AuthContext
+    {
+        $this->serverAddress = $serverAddress;
         return $this;
     }
 
@@ -215,7 +236,7 @@ class AuthContext implements Context
 
         return
             [
-                CURLOPT_URL            => $this->getTokenEndpoint(),
+                CURLOPT_URL            => $this->getServerAddress() . $this->getTokenEndpoint(),
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING       => '',
                 CURLOPT_MAXREDIRS      => 10,
