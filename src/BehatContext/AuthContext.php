@@ -8,16 +8,16 @@ use Behat\Behat\Context\Context;
 use Exception;
 use CurlHandle;
 
-class Auth0Context implements Context
+class AuthContext implements Context
 {
     /** @var HalContext */
     protected HalContext $halContext;
 
-    /** @var string Auth0 Token Endpoint */
-    protected string $auth0TokenEndpoint;
+    /** @var string Server Address */
+    protected string $serverAddress;
 
-    /** @var string Auth0 Audience */
-    protected string $auth0Audience;
+    /** @var string Token Endpoint */
+    protected string $tokenEndpoint;
 
     /** @var MachineToMachineCredentials[] */
     protected array $machineToMachineCredentials = [];
@@ -26,25 +26,25 @@ class Auth0Context implements Context
     protected array $userCredentials = [];
 
     /**
-     * Add credentials for a machine-to-machine connection to Auth0.
+     * Add credentials for a machine-to-machine connection.
      *
      * @param MachineToMachineCredentials $machineToMachineCredentials
-     * @return Auth0Context
+     * @return AuthContext
      */
     public function addMachineToMachineCredentials(
         MachineToMachineCredentials $machineToMachineCredentials
-    ): Auth0Context {
+    ): AuthContext {
         $this->machineToMachineCredentials[] = $machineToMachineCredentials;
         return $this;
     }
 
     /**
-     * Add credentials for a Login/Password connection to Auth0.
+     * Add credentials for a Login/Password connection.
      *
      * @param UserCredentials $userCredentials
-     * @return Auth0Context
+     * @return AuthContext
      */
-    public function addUserCredentials(UserCredentials $userCredentials): Auth0Context
+    public function addUserCredentials(UserCredentials $userCredentials): AuthContext
     {
         $this->userCredentials[] = $userCredentials;
         return $this;
@@ -57,7 +57,7 @@ class Auth0Context implements Context
     public function getHalContext(): HalContext
     {
         if (!isset($this->halContext)) {
-            throw new Exception('HalContext must be injected into Auth0Context before proceeding.');
+            throw new Exception('HalContext must be injected into AuthContext before proceeding.');
         }
 
         return $this->halContext;
@@ -65,9 +65,9 @@ class Auth0Context implements Context
 
     /**
      * @param HalContext $halContext
-     * @return Auth0Context
+     * @return AuthContext
      */
-    public function setHalContext(HalContext $halContext): Auth0Context
+    public function setHalContext(HalContext $halContext): AuthContext
     {
         $this->halContext = $halContext;
         return $this;
@@ -76,47 +76,47 @@ class Auth0Context implements Context
     /**
      * @return string
      */
-    public function getAuth0TokenEndpoint(): string
+    public function getServerAddress(): string
     {
-        return $this->auth0TokenEndpoint;
+        return $this->serverAddress;
     }
 
     /**
-     * @param string|null $auth0TokenEndpoint
-     * @return Auth0Context
+     * @param string $serverAddress
+     * @return AuthContext
      */
-    public function setAuth0TokenEndpoint(?string $auth0TokenEndpoint): Auth0Context
+    public function setServerAddress(string $serverAddress): AuthContext
     {
-        $this->auth0TokenEndpoint = $auth0TokenEndpoint;
+        $this->serverAddress = $serverAddress;
         return $this;
     }
 
     /**
      * @return string
      */
-    public function getAuth0Audience(): string
+    public function getTokenEndpoint(): string
     {
-        return $this->auth0Audience;
+        return $this->tokenEndpoint;
     }
 
     /**
-     * @param string|null $auth0Audience
-     * @return Auth0Context
+     * @param string|null $tokenEndpoint
+     * @return AuthContext
      */
-    public function setAuth0Audience(?string $auth0Audience): Auth0Context
+    public function setTokenEndpoint(?string $tokenEndpoint): AuthContext
     {
-        $this->auth0Audience = $auth0Audience;
+        $this->tokenEndpoint = $tokenEndpoint;
         return $this;
     }
 
     /**
-     * @Given I am authenticated as user :username
+     * @Given I am authenticated as a user :username
      * @throws Exception
      */
-    public function iAmAuthenticatedAsUser(string $username): void
+    public function iAmAuthenticatedAsAUser(string $username): void
     {
         $userCredentials = $this->getUserCredentials($username);
-        $usernameHashKey = 'AUTH0_ACCESS_TOKEN_' . strtoupper(md5($username));
+        $usernameHashKey = 'AUTH_ACCESS_TOKEN_' . strtoupper(md5($username));
 
         if (!getenv($usernameHashKey)) {
             $curl = $this->getAccessTokenForUser($userCredentials);
@@ -147,13 +147,13 @@ class Auth0Context implements Context
     }
 
     /**
-     * @Given I am authenticated as Machine-to-Machine Client :machineToMachineClientName
+     * @Given I am authenticated as a Machine-to-Machine Client :machineToMachineClientName
      * @throws Exception
      */
-    public function iAmAuthenticatedAsMachineToMachineClient(string $machineToMachineClientName): void
+    public function iAmAuthenticatedAsAMachineToMachineClient(string $machineToMachineClientName): void
     {
         $machineToMachineCredentials = $this->getMachineToMachineCredentials($machineToMachineClientName);
-        $usernameHashKey             = 'AUTH0_ACCESS_TOKEN_' . strtoupper($machineToMachineClientName);
+        $usernameHashKey             = 'AUTH_ACCESS_TOKEN_' . strtoupper($machineToMachineClientName);
 
         if (!getenv($usernameHashKey)) {
             $curl = $this->getAccessTokenForMachineToMachineClient($machineToMachineCredentials);
@@ -192,7 +192,6 @@ class Auth0Context implements Context
         $postFields =
             [
                 'grant_type' => 'password',
-                'audience'   => $this->getAuth0Audience(),
                 'username'   => $userCredentials->getUsername(),
                 'password'   => $userCredentials->getPassword(),
                 'client_id'  => $userCredentials->getClientId(),
@@ -214,7 +213,6 @@ class Auth0Context implements Context
         $postFields =
             [
                 'grant_type'    => 'client_credentials',
-                'audience'      => $this->getAuth0Audience(),
                 'client_id'     => $machineToMachineCredentials->getClientId(),
                 'client_secret' => $machineToMachineCredentials->getClientSecret(),
             ];
@@ -231,17 +229,22 @@ class Auth0Context implements Context
      */
     protected function getCurlOptions(array $postFields): array
     {
+        $postFieldsEncoded = [];
+        foreach ($postFields as $key => $value) {
+            $postFieldsEncoded[] = sprintf('%s=%s', $key, $value);
+        }
+
         return
             [
-                CURLOPT_URL            => $this->getAuth0TokenEndpoint(),
+                CURLOPT_URL            => $this->getServerAddress() . $this->getTokenEndpoint(),
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING       => '',
                 CURLOPT_MAXREDIRS      => 10,
                 CURLOPT_TIMEOUT        => 30,
                 CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
                 CURLOPT_CUSTOMREQUEST  => 'POST',
-                CURLOPT_POSTFIELDS     => json_encode($postFields),
-                CURLOPT_HTTPHEADER     => ['Content-Type: application/json']
+                CURLOPT_POSTFIELDS     => implode('&', $postFieldsEncoded),
+                CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded']
             ];
     }
 

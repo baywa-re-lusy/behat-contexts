@@ -1,8 +1,6 @@
 <?php
 
-namespace BayWaReLusy\BehatContext\Auth0Context;
-
-use Exception;
+namespace BayWaReLusy\BehatContext\AuthContext;
 
 class MachineToMachineCredentials extends \BayWaReLusy\BehatContext\Authentication\MachineToMachineCredentials
 {
