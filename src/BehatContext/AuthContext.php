@@ -235,7 +235,9 @@ class AuthContext implements Context
         }
         return
             [
-                CURLOPT_URL            => rtrim($this->getServerAddress(), '/') . '/' . ltrim($this->getTokenEndpoint(), '/'),
+                CURLOPT_URL            => rtrim($this->getServerAddress(), '/')
+                    . '/'
+                    . ltrim($this->getTokenEndpoint(), '/'),
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING       => '',
                 CURLOPT_MAXREDIRS      => 10,
