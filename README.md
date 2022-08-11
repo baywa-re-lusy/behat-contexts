@@ -90,8 +90,8 @@ The `HalContext` needs to be initialized first.
 In your `FeatureContext`, add the following:
 
 ```php
-use BayWaReLusy\BehatContext\Auth0Context\AuthContextAwareTrait;
-use BayWaReLusy\BehatContext\Auth0Context\AuthContextAwareInterface;
+use BayWaReLusy\BehatContext\Auth0Context\Auth0ContextAwareTrait;
+use BayWaReLusy\BehatContext\Auth0Context\Auth0ContextAwareInterface;
 use BayWaReLusy\BehatContext\Auth0Context\MachineToMachineCredentials;
 use BayWaReLusy\BehatContext\Auth0Context\UserCredentials;
 
@@ -124,6 +124,55 @@ class FeatureContext implements
                 '<User Login>',
                 '<User Password>',
                 '<Auth0 Client ID>'
+            ));
+        ...
+    }
+}
+```
+
+# AuthContext
+
+A Context to login to a generic Auth Server (OpenID Connect/OAuth2) with Login/Password or as a Machine-to-Machine client.
+The `HalContext` needs to be initialized first.
+
+In your `FeatureContext`, add the following:
+
+```php
+use BayWaReLusy\BehatContext\AuthContext\AuthContextAwareTrait;
+use BayWaReLusy\BehatContext\AuthContext\AuthContextAwareInterface;
+use BayWaReLusy\BehatContext\AuthContext\MachineToMachineCredentials;
+use BayWaReLusy\BehatContext\AuthContext\UserCredentials;
+
+class FeatureContext implements
+    ...
+    AuthContextAwareInterface
+    ...
+{
+    use AuthContextAwareTrait;
+    
+    ...
+    
+    /**
+     * @BeforeScenario
+     */
+    public function gatherContexts(\Behat\Behat\Hook\Scope\BeforeScenarioScope $scope)
+    {
+        ...
+        $this->gatherAuthContext($scope);
+        $this->getAuthContext()
+            ->setHalContext($this->getHalContext())
+            ->setServerAddress(<Auth Server address>)
+            ->setTokenEndpoint(<Auth Server Token endpoint>)
+            ->setTokenEndpoint(<Auth Server Token endpoint>)
+            ->addMachineToMachineCredentials(new MachineToMachineCredentials(
+                '<Client name describing the client>',
+                '<Auth Client ID>',
+                '<Auth Client Secret>'
+            ))
+            ->addUserCredentials(new UserCredentials(
+                '<User Login>',
+                '<User Password>',
+                '<Auth Client ID>'
             ));
         ...
     }
