@@ -233,10 +233,11 @@ class AuthContext implements Context
         foreach ($postFields as $key => $value) {
             $postFieldsEncoded[] = sprintf('%s=%s', $key, $value);
         }
-
         return
             [
-                CURLOPT_URL            => $this->getServerAddress() . $this->getTokenEndpoint(),
+                CURLOPT_URL            => rtrim($this->getServerAddress(), '/')
+                    . '/'
+                    . ltrim($this->getTokenEndpoint(), '/'),
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING       => '',
                 CURLOPT_MAXREDIRS      => 10,
