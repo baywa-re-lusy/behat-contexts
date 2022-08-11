@@ -88,7 +88,6 @@ A Context to login to Auth0 with Login/Password or as a Machine-to-Machine clien
 The `HalContext` needs to be initialized first.
 
 In your `FeatureContext`, add the following:
-
 ```php
 use BayWaReLusy\BehatContext\Auth0Context\Auth0ContextAwareTrait;
 use BayWaReLusy\BehatContext\Auth0Context\Auth0ContextAwareInterface;
@@ -136,7 +135,6 @@ A Context to login to a generic Auth Server (OpenID Connect/OAuth2) with Login/P
 The `HalContext` needs to be initialized first.
 
 In your `FeatureContext`, add the following:
-
 ```php
 use BayWaReLusy\BehatContext\AuthContext\AuthContextAwareTrait;
 use BayWaReLusy\BehatContext\AuthContext\AuthContextAwareInterface;
