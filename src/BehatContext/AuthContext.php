@@ -138,6 +138,11 @@ class AuthContext implements Context
                 throw new Exception(sprintf("cURL Error #:%s", $err));
             } else {
                 $response = json_decode($response, true);
+
+                if (!is_array($response) || !array_key_exists('access_token', $response)) {
+                    throw new Exception(sprintf('Invalid Auth Server Response: %s', var_export($response, true)));
+                }
+
                 $this->getHalContext()->setBearerToken($response['access_token']);
                 putenv($usernameHashKey . '=' . $response['access_token']);
             }
