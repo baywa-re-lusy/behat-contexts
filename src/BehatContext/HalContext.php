@@ -322,6 +322,45 @@ class HalContext implements Context
     }
 
     /**
+     * @Then the resource :id in collection :collectionName should contain the embedded resource :embeddedResourceName:
+     * @throws Exception
+     */
+    public function theResourceInCollectionShouldContainTheEmbeddedResource(
+        string $id,
+        string $collectionName,
+        string $embeddedResourceName,
+        TableNode $embeddedResource
+    ): void {
+        /** @var stdClass $response */
+        $response = $this->getLastResponseJsonData();
+
+        if (!property_exists($response->_embedded, $collectionName)) {
+            throw new \Exception("Response collection doesn't exist.");
+        }
+
+        foreach ($response->_embedded->$collectionName as $resource) {
+            if ($resource->id === $id) {
+                if (!property_exists($resource->_embedded, $embeddedResourceName)) {
+                    throw new \Exception("Resource doesn't contain the expected embedded resource.");
+                }
+
+                foreach ($embeddedResource->getRowsHash() as $key => $value) {
+                    if (
+                        !property_exists($resource->_embedded->$embeddedResourceName, $key) ||
+                        $resource->_embedded->$embeddedResourceName->$key != $value
+                    ) {
+                        throw new \Exception("Embedded Resource doesn't match the required values.");
+                    }
+                }
+
+                return;
+            }
+        }
+
+        throw new \Exception('Resource in response collection not found.');
+    }
+
+    /**
      * @When I send a :method request to :url
      * @When I send a :method request to :url with JSON body :body
      * @throws GuzzleException
