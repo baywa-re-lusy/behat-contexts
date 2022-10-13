@@ -156,6 +156,32 @@ class HalContext implements Context
     }
 
     /**
+     * @Then error message on field :expectedField should be of type :expectedErrorType
+     */
+    public function errorMessageOnFieldShouldBe(string $expectedField, string $expectedErrorType): void
+    {
+        $errors = json_decode($this->getLastResponse()->getBody()->getContents(), true);
+
+        if (count($errors['validation_messages']) > 1) {
+            var_export($errors);
+            throw new \Exception("The input caused more than one error.");
+        }
+
+        foreach ($errors['validation_messages'] as $field => $fieldErrors) {
+            if ($field === $expectedField) {
+                foreach ($fieldErrors as $errorType => $errorMessage) {
+                    if ($errorType === $expectedErrorType) {
+                        return;
+                    }
+                }
+            }
+        }
+
+        var_export($errors);
+        throw new \Exception("The expected error type hasn't been found.");
+    }
+
+    /**
      * @Then the response should contain exactly :nbEntries :typeEntries
      */
     public function theResponseShouldContainExactly(string $nbEntries, string $typeEntries): void
