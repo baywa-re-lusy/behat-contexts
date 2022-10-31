@@ -133,11 +133,18 @@ class SqsContext implements Context
      * @Then a message with the following content should have been queued in :queueName:
      * @throws Exception
      */
-    public function aMessageWithTheFollowingContentShouldHaveBeenQueuedIn(string $queueName, TableNode $table): void
-    {
+    public function aMessageWithTheFollowingContentShouldHaveBeenQueuedIn(
+        string $queueName,
+        TableNode $table,
+        bool $exactMatchRequired = false
+    ): void {
         $this->receiveMessagesFromQueue($queueName);
 
         foreach ($this->queueMessages[$queueName] as $messageContent) {
+            if ($exactMatchRequired && count($messageContent) !== count($table->getRows())) {
+                continue;
+            }
+
             foreach ($table->getRows() as $row) {
                 if ($messageContent[$row[0]] != $row[1]) {
                     continue 2;
@@ -148,6 +155,17 @@ class SqsContext implements Context
         }
 
         throw new Exception(sprintf("Message not found in queue '%s'.", $queueName));
+    }
+
+    /**
+     * @Then a message with exactly the following content should have been queued in :queueName:
+     * @throws Exception
+     */
+    public function aMessageWithExactlyTheFollowingContentShouldHaveBeenQueuedIn(
+        string $queueName,
+        TableNode $table
+    ): void {
+        $this->aMessageWithTheFollowingContentShouldHaveBeenQueuedIn($queueName, $table, true);
     }
 
     /**
