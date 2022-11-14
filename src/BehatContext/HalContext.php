@@ -160,6 +160,11 @@ class HalContext implements Context
      */
     public function errorMessageOnFieldShouldBe(string $expectedField, string $expectedErrorType): void
     {
+        // Don't check anything if no specific erronuous field is expected in the response
+        if (empty($expectedField) && empty($expectedErrorType)) {
+            return;
+        }
+
         $errors = json_decode($this->getLastResponse()->getBody()->getContents(), true);
 
         if (count($errors['validation_messages']) > 1) {
