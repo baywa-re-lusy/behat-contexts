@@ -33,6 +33,6 @@ workflows:
   version: 2
   build:
     jobs:
-      - static
+      - static:
           context:
             - ACR_CREDENTIALS
