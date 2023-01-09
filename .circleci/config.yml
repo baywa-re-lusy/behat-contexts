@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   static:
     docker:
-      - image: ${ACR_HOSTNAME_PD}/alpine-php8-build:latest
+      - image: ${ACR_HOSTNAME_PD}/alpine-php81-build:latest
         auth:
           username: ${ACR_LOGIN_PD}
           password: ${ACR_PASSWORD_PD}
