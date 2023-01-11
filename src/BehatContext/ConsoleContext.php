@@ -9,13 +9,22 @@ class ConsoleContext implements Context
 {
     /**
      * @When I call the console route :arg1
+     * @When I call the console route :arg1 with argument :argument1
+     * @When I call the console route :arg1 with argument :argument1 and :argument2
      * @throws Exception
      */
-    public function iCallTheConsoleRoute(string $route): void
+    public function iCallTheConsoleRoute(string $route, string $argument1 = null, string $argument2 = null): void
     {
         $status = null;
         $output = [];
-        exec(getcwd() . '/console ' . $route, $output, $status);
+        $argumentString = "";
+        if ($argument1) {
+            $argumentString = $argumentString . " " . $argument1;
+        }
+        if ($argument2) {
+            $argumentString = $argumentString . " " . $argument2;
+        }
+        exec(getcwd() . '/console ' . $route . $argumentString, $output, $status);
 
         foreach ($output as $outputLine) {
             echo $outputLine . PHP_EOL;
