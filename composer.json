@@ -24,7 +24,8 @@
         "phpstan/phpstan": "^1.5",
         "ramsey/uuid": "^4.3",
         "squizlabs/php_codesniffer": "^3.6",
-        "guzzlehttp/guzzle": "^7.4"
+        "guzzlehttp/guzzle": "^7.4",
+        "mtdowling/jmespath.php": "^2.6"
     },
     "autoload": {
         "psr-4": {
