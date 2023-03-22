@@ -188,6 +188,32 @@ class SqsContext implements Context
     }
 
     /**
+     * @Then a message with exactly the following JSON path content should have been queued in :queueName:
+     */
+    public function aMessageWithExactlyTheFollowingJSONPathContentShouldHaveBeenQueuedIn(
+        string $queueName,
+        TableNode $table
+    ): void {
+        $this->receiveMessagesFromQueue($queueName);
+
+        $validMessage = false;
+        foreach ($this->queueMessages[$queueName] as $messageContent) {
+            foreach ($table->getRows() as $row) {
+                $searchResult = (string) \JmesPath\Env::search($row[0], $messageContent);
+                if ($searchResult != $row[1]) {
+                    continue 2;
+                }
+            }
+
+            $validMessage = true;
+        }
+
+        if (!$validMessage) {
+            throw new \Exception(sprintf("Message should not have been found in queue '%s'.", $queueName));
+        }
+    }
+
+    /**
      * Read all messages from the given Queue.
      *
      * @param string $queueName
