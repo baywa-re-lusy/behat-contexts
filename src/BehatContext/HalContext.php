@@ -160,30 +160,70 @@ class HalContext implements Context
      */
     public function errorMessageOnFieldShouldBe(string $expectedField, string $expectedErrorType): void
     {
-        // Don't check anything if no specific erronuous field is expected in the response
+        // Don't check anything if no specific erroneous field is expected in the response
         if (empty($expectedField) && empty($expectedErrorType)) {
             return;
         }
 
         $errors = json_decode($this->getLastResponse()->getBody()->getContents(), true);
 
-        if (count($errors['validation_messages']) > 1) {
-            var_export($errors);
-            throw new \Exception("The input caused more than one error.");
+        // Check if the response contains validation messages
+        if (!array_key_exists('validation_messages', $errors)) {
+            throw new \Exception("No validation messages found.");
         }
 
-        foreach ($errors['validation_messages'] as $field => $fieldErrors) {
-            if ($field === $expectedField) {
-                foreach ($fieldErrors as $errorType => $errorMessage) {
-                    if ($errorType === $expectedErrorType) {
-                        return;
-                    }
+        // If the request was on a single resource, "validation_messages" is a hash table with
+        // "fieldName => arrayOfMessages".
+        // If the request was on a collection, "validation_messages" is a list of hash tables with
+        // "fieldName => arrayOfMessages".
+        try {
+            if (!array_is_list($errors['validation_messages'])) {
+                $this->validateErrorFieldAndType($errors['validation_messages'], $expectedField, $expectedErrorType);
+            } else {
+                foreach ($errors['validation_messages'] as $errorMessagesForResource) {
+                    $this->validateErrorFieldAndType($errorMessagesForResource, $expectedField, $expectedErrorType);
                 }
             }
+        } catch (\Exception $e) {
+            var_dump($errors);
+            throw $e;
+        }
+    }
+
+    /**
+     * @param array<string, array<string, string>> $errorMessagesForResource
+     * @param string $expectedField
+     * @param string $expectedErrorType
+     * @return void
+     * @throws Exception
+     */
+    protected function validateErrorFieldAndType(
+        array $errorMessagesForResource,
+        string $expectedField,
+        string $expectedErrorType
+    ): void {
+        if (count($errorMessagesForResource) > 1) {
+            throw new \Exception(sprintf(
+                "The input caused errors on more than one field : %s.",
+                implode(' ,', array_keys($errorMessagesForResource))
+            ));
         }
 
-        var_export($errors);
-        throw new \Exception("The expected error type hasn't been found.");
+        if (array_key_first($errorMessagesForResource) !== $expectedField) {
+            throw new \Exception(sprintf("The expected error field '%s' hasn't been found.", $expectedField));
+        }
+
+        if (count($errorMessagesForResource[$expectedField]) > 1) {
+            throw new \Exception(sprintf(
+                "The input caused more than one error on field '%s' => %s",
+                $expectedField,
+                implode(' ,', array_keys($errorMessagesForResource[$expectedField]))
+            ));
+        }
+
+        if (array_key_first($errorMessagesForResource[$expectedField]) !== $expectedErrorType) {
+            throw new \Exception(sprintf("The expected error type '%s' hasn't been found.", $expectedErrorType));
+        }
     }
 
     /**
