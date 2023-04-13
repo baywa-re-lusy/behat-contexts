@@ -190,11 +190,18 @@ class HalContext implements Context
         }
     }
 
+    /**
+     * @param array<string, array<string, string>> $errorMessagesForResource
+     * @param string $expectedField
+     * @param string $expectedErrorType
+     * @return void
+     * @throws Exception
+     */
     protected function validateErrorFieldAndType(
         array $errorMessagesForResource,
         string $expectedField,
         string $expectedErrorType
-    ) {
+    ): void {
         if (count($errorMessagesForResource) > 1) {
             throw new \Exception(sprintf(
                 "The input caused errors on more than one field : %s.",
