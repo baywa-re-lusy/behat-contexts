@@ -146,6 +146,12 @@ class SqsContext implements Context
             }
 
             foreach ($table->getRows() as $row) {
+                if ($row[1] === 'false') {
+                    $row[1] = false;
+                } elseif ($row[1] === 'true') {
+                    $row[1] = true;
+                }
+
                 if ($messageContent[$row[0]] != $row[1]) {
                     continue 2;
                 }
