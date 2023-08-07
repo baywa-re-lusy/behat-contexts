@@ -236,6 +236,7 @@ class SqsContext implements Context
 
         while ($message = $this->getQueueService()->receiveMessage($queueUrl->getQueueUrl())) {
             $this->queueMessages[$queueName][$message->getReceiptHandle()] = json_decode($message->getBody(), true);
+            $this->getQueueService()->deleteMessage($queueUrl->getQueueUrl(), $message);
         }
     }
 
