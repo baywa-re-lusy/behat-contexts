@@ -26,6 +26,12 @@ class SqsContext implements Context
     protected QueueService $queueService;
 
     /**
+     * Path to the directory with example JSON files.
+     * @var string
+     */
+    protected string $jsonFilesPath;
+
+    /**
      * @return QueueService
      */
     public function getQueueService(): QueueService
@@ -70,6 +76,24 @@ class SqsContext implements Context
     public function setAwsSecret(string $awsSecret): SqsContext
     {
         $this->awsSecret = $awsSecret;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getJsonFilesPath(): string
+    {
+        return rtrim($this->jsonFilesPath, '/');
+    }
+
+    /**
+     * @param string $jsonFilesPath
+     * @return SqsContext
+     */
+    public function setJsonFilesPath(string $jsonFilesPath): SqsContext
+    {
+        $this->jsonFilesPath = $jsonFilesPath;
         return $this;
     }
 
@@ -124,6 +148,30 @@ class SqsContext implements Context
         $this->getQueueService()->sendMessage(
             $queueUrl->getQueueUrl(),
             (string)json_encode($message->getRowsHash()),
+            Uuid::uuid4()->toString(),
+            Uuid::uuid4()->toString()
+        );
+    }
+
+    /**
+     * @Given a message in queue :queueName with JSON content :jsonOrFileName
+     */
+    public function aMessageInQueueWithJsonContent(string $queueName, string $jsonOrFileName): void
+    {
+        $queueUrl = $this->getQueueUrl($queueName);
+
+        if (str_starts_with($jsonOrFileName, 'file://')) {
+            $fileName = $this->getJsonFilesPath() . DIRECTORY_SEPARATOR . str_replace('file://', '', $jsonOrFileName);
+            $jsonOrFileName = file_get_contents($fileName);
+
+            if (!$jsonOrFileName) {
+                throw new Exception(sprintf("File %s not found.", $fileName));
+            }
+        }
+
+        $this->getQueueService()->sendMessage(
+            $queueUrl->getQueueUrl(),
+            $jsonOrFileName,
             Uuid::uuid4()->toString(),
             Uuid::uuid4()->toString()
         );
