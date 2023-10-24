@@ -25,6 +25,9 @@ class AuthContext implements Context
     /** @var UserCredentials[] */
     protected array $userCredentials = [];
 
+    /** @var array<string, array<mixed>> */
+    protected array $claims = [];
+
     /**
      * Add credentials for a machine-to-machine connection.
      *
@@ -152,23 +155,41 @@ class AuthContext implements Context
     }
 
     /**
+     * @Given a claim :claimName with values :values
+     */
+    public function withClaims(string $claimName, string $values): void
+    {
+        $claimValues = [];
+        foreach (explode(',', $values) as $value) {
+            $claimValues[] = $value;
+        }
+        $this->claims = [$claimName => $claimValues];
+    }
+
+    /**
      * @Given I am authenticated as a Machine-to-Machine Client :machineToMachineClientName
      * @throws Exception
      */
     public function iAmAuthenticatedAsAMachineToMachineClient(string $machineToMachineClientName): void
     {
         $machineToMachineCredentials = $this->getMachineToMachineCredentials($machineToMachineClientName);
-        $usernameHashKey             = 'AUTH_ACCESS_TOKEN_' . strtoupper($machineToMachineClientName);
+        $usernameHashKey = 'AUTH_ACCESS_TOKEN_' . strtoupper($machineToMachineClientName) . json_encode($this->claims);
 
         if (!getenv($usernameHashKey)) {
-            $curl = $this->getAccessTokenForMachineToMachineClient($machineToMachineCredentials);
+            if ($this->claims) {
+                $curl = $this->getAccessTokenForMachineToMachineClientWithClaims(
+                    $machineToMachineCredentials,
+                    $this->getClaims()
+                );
+            } else {
+                $curl = $this->getAccessTokenForMachineToMachineClient($machineToMachineCredentials);
+            }
 
             if (!$curl instanceof CurlHandle) {
                 throw new Exception("Couldn't fetch Bearer Token.");
             }
 
             $response = curl_exec($curl);
-
             if (!is_string($response)) {
                 throw new Exception(sprintf('Invalid curl response: %s', var_export($response, true)));
             }
@@ -229,6 +250,38 @@ class AuthContext implements Context
     }
 
     /**
+     * @param MachineToMachineCredentials $machineToMachineCredentials
+     * @param array<string, array<string>> $claims
+     * @return CurlHandle|bool
+     * @throws Exception
+     */
+    protected function getAccessTokenForMachineToMachineClientWithClaims(
+        MachineToMachineCredentials $machineToMachineCredentials,
+        array $claims
+    ): CurlHandle|bool {
+        if (!$machineToMachineCredentials->getAudience()) {
+            throw new Exception("An audience has to be set on the credentials for the claims to work");
+        }
+        $encodedClaims = json_encode($claims);
+        if (!$encodedClaims) {
+            throw new Exception("Unable to encode the claims");
+        }
+        $base64EncodedClaims = base64_encode($encodedClaims);
+        $postFields =
+            [
+                'grant_type'    => 'urn:ietf:params:oauth:grant-type:uma-ticket',
+                'client_id'     => $machineToMachineCredentials->getClientId(),
+                'client_secret' => $machineToMachineCredentials->getClientSecret(),
+                'claim_token_format' => 'urn:ietf:params:oauth:token-type:jwt',
+                'claim_token' => $base64EncodedClaims,
+                'audience' => $machineToMachineCredentials->getAudience()
+            ];
+        $curl = curl_init();
+        curl_setopt_array($curl, $this->getCurlOptions($postFields));
+        return $curl;
+    }
+
+    /**
      * @param string[] $postFields
      * @return array<int, array<int, string>|bool|int|string|null>
      */
@@ -280,5 +333,23 @@ class AuthContext implements Context
         }
 
         throw new Exception(sprintf("No User credentials found with username '%s'", $username));
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public function getClaims(): array
+    {
+        return $this->claims;
+    }
+
+    /**
+     * @param array<string, array<string>> $claims
+     * @return $this
+     */
+    public function setClaims(array $claims): AuthContext
+    {
+        $this->claims = $claims;
+        return $this;
     }
 }
