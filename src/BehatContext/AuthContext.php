@@ -251,7 +251,7 @@ class AuthContext implements Context
 
     /**
      * @param MachineToMachineCredentials $machineToMachineCredentials
-     * @param array<string, array> $claims
+     * @param array<string, array<string>> $claims
      * @return CurlHandle|bool
      * @throws Exception
      */
@@ -266,7 +266,7 @@ class AuthContext implements Context
         if (!$encodedClaims) {
             throw new Exception("Unable to encode the claims");
         }
-        $base64EncodedClaims = base64_encode(json_encode($claims));
+        $base64EncodedClaims = base64_encode($encodedClaims);
         $postFields =
             [
                 'grant_type'    => 'urn:ietf:params:oauth:grant-type:uma-ticket',
@@ -336,7 +336,7 @@ class AuthContext implements Context
     }
 
     /**
-     * @return array<string, array>
+     * @return array<string, array<string>>
      */
     public function getClaims(): array
     {
@@ -344,7 +344,7 @@ class AuthContext implements Context
     }
 
     /**
-     * @param array<string, array> $claims
+     * @param array<string, array<string>> $claims
      * @return $this
      */
     public function setClaims(array $claims): AuthContext
