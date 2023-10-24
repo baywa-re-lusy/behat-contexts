@@ -251,7 +251,7 @@ class AuthContext implements Context
 
     /**
      * @param MachineToMachineCredentials $machineToMachineCredentials
-     * @param array $claims
+     * @param array<string, array> $claims
      * @return CurlHandle|bool
      * @throws Exception
      */
@@ -262,15 +262,18 @@ class AuthContext implements Context
         if (!$machineToMachineCredentials->getAudience()) {
             throw new Exception("An audience has to be set on the credentials for the claims to work");
         }
-        $encodedClaims = base64_encode(json_encode($claims));
-        error_log($encodedClaims);
+        $encodedClaims = json_encode($claims);
+        if (!$encodedClaims) {
+            throw new Exception("Unable to encode the claims");
+        }
+        $base64EncodedClaims = base64_encode(json_encode($claims));
         $postFields =
             [
                 'grant_type'    => 'urn:ietf:params:oauth:grant-type:uma-ticket',
                 'client_id'     => $machineToMachineCredentials->getClientId(),
                 'client_secret' => $machineToMachineCredentials->getClientSecret(),
                 'claim_token_format' => 'urn:ietf:params:oauth:token-type:jwt',
-                'claim_token' => $encodedClaims,
+                'claim_token' => $base64EncodedClaims,
                 'audience' => $machineToMachineCredentials->getAudience()
             ];
         $curl = curl_init();
@@ -332,11 +335,18 @@ class AuthContext implements Context
         throw new Exception(sprintf("No User credentials found with username '%s'", $username));
     }
 
+    /**
+     * @return array<string, array>
+     */
     public function getClaims(): array
     {
         return $this->claims;
     }
 
+    /**
+     * @param array<string, array> $claims
+     * @return $this
+     */
     public function setClaims(array $claims): AuthContext
     {
         $this->claims = $claims;
