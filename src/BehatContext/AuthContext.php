@@ -25,6 +25,9 @@ class AuthContext implements Context
     /** @var UserCredentials[] */
     protected array $userCredentials = [];
 
+    /** @var array<string, array<mixed>> */
+    protected array $claims = [];
+
     /**
      * Add credentials for a machine-to-machine connection.
      *
@@ -152,6 +155,18 @@ class AuthContext implements Context
     }
 
     /**
+     * @Given a claim :claimName with values :values
+     */
+    public function withClaims(string $claimName, string $values): void
+    {
+        $claimValues = [];
+        foreach (explode(',', $values) as $value) {
+            $claimValues[] = $value;
+        }
+        $this->claims = [$claimName => $claimValues];
+    }
+
+    /**
      * @Given I am authenticated as a Machine-to-Machine Client :machineToMachineClientName
      * @throws Exception
      */
@@ -161,14 +176,20 @@ class AuthContext implements Context
         $usernameHashKey             = 'AUTH_ACCESS_TOKEN_' . strtoupper($machineToMachineClientName);
 
         if (!getenv($usernameHashKey)) {
-            $curl = $this->getAccessTokenForMachineToMachineClient($machineToMachineCredentials);
+            if ($this->claims) {
+                $curl = $this->getAccessTokenForMachineToMachineClientWithClaims(
+                    $machineToMachineCredentials,
+                    $this->getClaims()
+                );
+            } else {
+                $curl = $this->getAccessTokenForMachineToMachineClient($machineToMachineCredentials);
+            }
 
             if (!$curl instanceof CurlHandle) {
                 throw new Exception("Couldn't fetch Bearer Token.");
             }
 
             $response = curl_exec($curl);
-
             if (!is_string($response)) {
                 throw new Exception(sprintf('Invalid curl response: %s', var_export($response, true)));
             }
@@ -229,6 +250,35 @@ class AuthContext implements Context
     }
 
     /**
+     * @param MachineToMachineCredentials $machineToMachineCredentials
+     * @param array $claims
+     * @return CurlHandle|bool
+     * @throws Exception
+     */
+    protected function getAccessTokenForMachineToMachineClientWithClaims(
+        MachineToMachineCredentials $machineToMachineCredentials,
+        array $claims
+    ): CurlHandle|bool {
+        if (!$machineToMachineCredentials->getAudience()) {
+            throw new Exception("An audience has to be set on the credentials for the claims to work");
+        }
+        $encodedClaims = base64_encode(json_encode($claims));
+        error_log($encodedClaims);
+        $postFields =
+            [
+                'grant_type'    => 'urn:ietf:params:oauth:grant-type:uma-ticket',
+                'client_id'     => $machineToMachineCredentials->getClientId(),
+                'client_secret' => $machineToMachineCredentials->getClientSecret(),
+                'claim_token_format' => 'urn:ietf:params:oauth:token-type:jwt',
+                'claim_token' => $encodedClaims,
+                'audience' => $machineToMachineCredentials->getAudience()
+            ];
+        $curl = curl_init();
+        curl_setopt_array($curl, $this->getCurlOptions($postFields));
+        return $curl;
+    }
+
+    /**
      * @param string[] $postFields
      * @return array<int, array<int, string>|bool|int|string|null>
      */
@@ -281,4 +331,16 @@ class AuthContext implements Context
 
         throw new Exception(sprintf("No User credentials found with username '%s'", $username));
     }
+
+    public function getClaims(): array
+    {
+        return $this->claims;
+    }
+
+    public function setClaims(array $claims): AuthContext
+    {
+        $this->claims = $claims;
+        return $this;
+    }
+
 }
