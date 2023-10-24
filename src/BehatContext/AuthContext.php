@@ -352,5 +352,4 @@ class AuthContext implements Context
         $this->claims = $claims;
         return $this;
     }
-
 }
