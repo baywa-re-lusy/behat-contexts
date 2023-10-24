@@ -173,7 +173,7 @@ class AuthContext implements Context
     public function iAmAuthenticatedAsAMachineToMachineClient(string $machineToMachineClientName): void
     {
         $machineToMachineCredentials = $this->getMachineToMachineCredentials($machineToMachineClientName);
-        $usernameHashKey             = 'AUTH_ACCESS_TOKEN_' . strtoupper($machineToMachineClientName);
+        $usernameHashKey = 'AUTH_ACCESS_TOKEN_' . strtoupper($machineToMachineClientName) . json_encode($this->claims);
 
         if (!getenv($usernameHashKey)) {
             if ($this->claims) {
