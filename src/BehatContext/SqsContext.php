@@ -224,6 +224,7 @@ class SqsContext implements Context
 
     /**
      * @Then a message with the following content shouldn't have been queued in :queueName:
+     * @Then a message with the following content should no longer be in queue :queueName:
      * @throws Exception
      */
     public function aMessageWithTheFollowingContentShouldntHaveBeenQueuedIn(string $queueName, TableNode $table): void
