@@ -266,25 +266,6 @@ class HalContext implements Context
     }
 
     /**
-     * @Then the response collection :collectionName should contain the resources :resourceIds
-     * @throws Exception
-     */
-    public function theResponseCollectionShouldContainTheResources(
-        string $collectionName, string $resourceIds
-    ): void {
-        /** @var stdClass $response */
-        $response = $this->getLastResponseJsonData();
-
-        $collection = $response->_embedded->$collectionName;
-
-        foreach (explode(',', $resourceIds) as $resourceId) {
-            if (!$this->collectionContainsResource($collection, $expectedResource)) {
-                throw new \Exception(sprintf('Resource %s not found.', $resourceId));
-            }
-        }
-    }
-
-    /**
      * @Then the response collection :collectionName should not contain the resource:
      * @throws Exception
      */
