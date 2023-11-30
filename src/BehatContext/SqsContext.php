@@ -15,9 +15,10 @@ class SqsContext implements Context
     /** @var QueueUrl[]  */
     protected array $queueUrls = [];
 
-    protected ?string $awsRegion = null;
-    protected ?string $awsKey = null;
-    protected ?string $awsSecret = null;
+    protected ?string $awsRegion   = null;
+    protected ?string $awsKey      = null;
+    protected ?string $awsSecret   = null;
+    protected ?string $sqsEndpoint = null;
 
     /** @var array<string, array<string, array<string, string>>> Queue messages */
     protected array $queueMessages = [];
@@ -79,6 +80,17 @@ class SqsContext implements Context
         return $this;
     }
 
+    public function getSqsEndpoint(): ?string
+    {
+        return $this->sqsEndpoint;
+    }
+
+    public function setSqsEndpoint(?string $sqsEndpoint): SqsContext
+    {
+        $this->sqsEndpoint = $sqsEndpoint;
+        return $this;
+    }
+
     /**
      * @return string
      */
@@ -121,16 +133,24 @@ class SqsContext implements Context
             throw new \Exception('AWS Credentials not set.');
         }
 
+        $sqsOptions =
+            [
+                'version'     => '2012-11-05',
+                'region'      => $this->awsRegion,
+                'credentials' =>
+                    [
+                        'key'    => $this->awsKey,
+                        'secret' => $this->awsSecret,
+                    ]
+            ];
+
+        // Endpoint is only mandatory for non-AWS SQS-providers like ElasticMQ
+        if (!is_null($this->getSqsEndpoint())) {
+            $sqsOptions['endpoint'] = $this->getSqsEndpoint();
+        }
+
         // Create SQS client
-        $sqsClient = new SqsClient([
-            'version'     => '2012-11-05',
-            'region'      => $this->awsRegion,
-            'credentials' =>
-                [
-                    'key'    => $this->awsKey,
-                    'secret' => $this->awsSecret,
-                ]
-        ]);
+        $sqsClient = new SqsClient($sqsOptions);
 
         // Clear all queues
         foreach ($this->queueUrls as $queueUrl) {

@@ -207,6 +207,7 @@ class FeatureContext implements
         $this->gatherSqsContext($scope);
         $this->getSqsContext()
             ->setQueueService($queueService)
+            ->setSqsEndpoint($sqsEndpoint) // <== optional Hostname of the SQS endpoint (e.g. "http://baywa_tms_elasticmq:9324")
             ->setAwsRegion(<AWS Region>)
             ->setAwsKey(<AWS Key>)
             ->setAwsSecret(<AWS Secret>)
