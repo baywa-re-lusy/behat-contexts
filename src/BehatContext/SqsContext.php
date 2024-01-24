@@ -245,16 +245,16 @@ class SqsContext implements Context
 
     /**
      * @Then a message with the following content shouldn't have been queued in :queueName:
-     * @Then a message with the following content should no longer be in queue :queueName: after :waitForSeconds seconds
+     * @Then a message with the following content should no longer be in queue :queueName: after :seconds seconds:
      * @throws Exception
      */
     public function aMessageWithTheFollowingContentShouldntHaveBeenQueuedIn(
         string $queueName,
         TableNode $table,
-        ?int $waitForSeconds = null
+        ?int $seconds = null
     ): void {
-        if (!is_null($waitForSeconds)) {
-            sleep($waitForSeconds);
+        if (!is_null($seconds)) {
+            sleep($seconds);
         }
 
         $this->receiveMessagesFromQueue($queueName);
