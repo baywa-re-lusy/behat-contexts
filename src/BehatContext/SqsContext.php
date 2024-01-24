@@ -233,6 +233,7 @@ class SqsContext implements Context
 
     /**
      * @Then a message with exactly the following content should have been queued in :queueName:
+     * @Then a message with exactly the following content should be in the queue :queueName:
      * @throws Exception
      */
     public function aMessageWithExactlyTheFollowingContentShouldHaveBeenQueuedIn(
@@ -264,6 +265,7 @@ class SqsContext implements Context
 
     /**
      * @Then a message with exactly the following JSON path content should have been queued in :queueName:
+     * @Then a message with exactly the following JSON path content should be in queue :queueName:
      */
     public function aMessageWithExactlyTheFollowingJSONPathContentShouldHaveBeenQueuedIn(
         string $queueName,
@@ -285,6 +287,42 @@ class SqsContext implements Context
 
         if (!$validMessage) {
             throw new \Exception(sprintf("Message should not have been found in queue '%s'.", $queueName));
+        }
+    }
+
+    /**
+     * @Then a message with content :content should have been queued in :queueName:
+     * @Then a message with content :content should be queued in :queueName:
+     */
+    public function aMessageWithContentShouldHaveBeenQueuedIn(
+        string $content,
+        string $queueName,
+    ): void {
+        $this->receiveMessagesFromQueue($queueName);
+
+        if (str_starts_with($content, 'file://')) {
+            $fileName = $this->getJsonFilesPath() . DIRECTORY_SEPARATOR . str_replace('file://', '', $content);
+            $content = file_get_contents($fileName);
+
+            if (!$content) {
+                throw new Exception(sprintf("File %s not found.", $fileName));
+            }
+
+            if (str_ends_with($fileName, '.json')) {
+                $content = json_decode($content, true);
+            }
+        }
+
+        $messageFound = false;
+        foreach ($this->queueMessages[$queueName] as $messageContent) {
+            if ($content === $messageContent) {
+                $messageFound = true;
+                break;
+            }
+        }
+
+        if (!$messageFound) {
+            throw new \Exception(sprintf("Message should have been found in queue '%s'.", $queueName));
         }
     }
 
