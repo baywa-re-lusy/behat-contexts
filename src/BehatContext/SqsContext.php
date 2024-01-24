@@ -293,10 +293,12 @@ class SqsContext implements Context
     /**
      * @Then a message with content :content should have been queued in :queueName
      * @Then a message with content :content should be in queue :queueName
+     * @Then a message with content :content should be in queue :queueName after :waitForSeconds seconds
      */
     public function aMessageWithContentShouldHaveBeenQueuedIn(
         string $content,
         string $queueName,
+        ?int $waitForSeconds = null
     ): void {
         $this->receiveMessagesFromQueue($queueName);
 
@@ -314,6 +316,12 @@ class SqsContext implements Context
         }
 
         $messageFound = false;
+
+        // Wait for a potential Invisibility Timeout to finish
+        if (!is_null($waitForSeconds)) {
+            sleep($waitForSeconds);
+        }
+
         foreach ($this->queueMessages[$queueName] as $messageContent) {
             if ($content === $messageContent) {
                 $messageFound = true;
