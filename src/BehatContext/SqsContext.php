@@ -245,6 +245,7 @@ class SqsContext implements Context
 
     /**
      * @Then a message with the following content shouldn't have been queued in :queueName:
+     * @Then a message with the following content should no longer be in queue :queueName:
      * @Then a message with the following content should no longer be in queue :queueName after :seconds seconds:
      * @throws Exception
      */
