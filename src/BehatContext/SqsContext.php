@@ -300,6 +300,11 @@ class SqsContext implements Context
         string $queueName,
         ?int $waitForSeconds = null
     ): void {
+        // Wait for a potential Invisibility Timeout to finish
+        if (!is_null($waitForSeconds)) {
+            sleep($waitForSeconds);
+        }
+
         $this->receiveMessagesFromQueue($queueName);
 
         if (str_starts_with($content, 'file://')) {
@@ -316,12 +321,6 @@ class SqsContext implements Context
         }
 
         $messageFound = false;
-
-        // Wait for a potential Invisibility Timeout to finish
-        if (!is_null($waitForSeconds)) {
-            sleep($waitForSeconds);
-        }
-
         foreach ($this->queueMessages[$queueName] as $messageContent) {
             if ($content === $messageContent) {
                 $messageFound = true;
