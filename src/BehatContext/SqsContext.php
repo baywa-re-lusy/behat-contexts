@@ -292,7 +292,7 @@ class SqsContext implements Context
 
     /**
      * @Then a message with content :content should have been queued in :queueName:
-     * @Then a message with content :content should be queued in :queueName:
+     * @Then a message with content :content should be in queue :queueName:
      */
     public function aMessageWithContentShouldHaveBeenQueuedIn(
         string $content,
