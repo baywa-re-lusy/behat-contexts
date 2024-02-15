@@ -163,13 +163,9 @@ class SqsContext implements Context
      */
     public function aMessageInQueue(string $queueName, TableNode $message): void
     {
-        $queueUrl = $this->getQueueUrl($queueName);
-
-        $this->getQueueService()->sendMessage(
-            $queueUrl->getQueueUrl(),
-            (string)json_encode($message->getRowsHash()),
-            Uuid::uuid4()->toString(),
-            Uuid::uuid4()->toString()
+        $this->sendMessageIntoQueue(
+            $this->getQueueUrl($queueName),
+            (string)json_encode($message->getRowsHash())
         );
     }
 
@@ -178,8 +174,6 @@ class SqsContext implements Context
      */
     public function aMessageInQueueWithJsonContent(string $queueName, string $jsonOrFileName): void
     {
-        $queueUrl = $this->getQueueUrl($queueName);
-
         if (str_starts_with($jsonOrFileName, 'file://')) {
             $fileName = $this->getJsonFilesPath() . DIRECTORY_SEPARATOR . str_replace('file://', '', $jsonOrFileName);
             $jsonOrFileName = file_get_contents($fileName);
@@ -189,11 +183,18 @@ class SqsContext implements Context
             }
         }
 
+        $this->sendMessageIntoQueue($this->getQueueUrl($queueName), $jsonOrFileName);
+    }
+
+    protected function sendMessageIntoQueue(QueueUrl $queueUrl, string $jsonMessageBody): void
+    {
+        $isFifoQueue = str_ends_with($queueUrl->getQueueUrl(), '.fifo');
+
         $this->getQueueService()->sendMessage(
             $queueUrl->getQueueUrl(),
-            $jsonOrFileName,
-            Uuid::uuid4()->toString(),
-            Uuid::uuid4()->toString()
+            $jsonMessageBody,
+            $isFifoQueue ? Uuid::uuid4()->toString() : null,
+            $isFifoQueue ? Uuid::uuid4()->toString() : null
         );
     }
 
