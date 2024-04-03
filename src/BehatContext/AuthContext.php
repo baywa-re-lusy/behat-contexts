@@ -163,7 +163,7 @@ class AuthContext implements Context
         foreach (explode(',', $values) as $value) {
             $claimValues[] = $value;
         }
-        $this->claims = [$claimName => $claimValues];
+        $this->addClaims($claimName, $claimValues);
     }
 
     /**
@@ -350,6 +350,17 @@ class AuthContext implements Context
     public function setClaims(array $claims): AuthContext
     {
         $this->claims = $claims;
+        return $this;
+    }
+
+    /**
+     * @param string $name
+     * @param array<string> $values
+     * @return AuthContext
+     */
+    public function addClaims(string $name, array $values): AuthContext
+    {
+        $this->claims[$name] = $values;
         return $this;
     }
 }
