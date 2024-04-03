@@ -355,7 +355,7 @@ class AuthContext implements Context
 
     /**
      * @param string $name
-     * @param array $values
+     * @param array<string> $values
      * @return AuthContext
      */
     public function addClaims(string $name, array $values): AuthContext
