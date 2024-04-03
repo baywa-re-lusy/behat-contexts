@@ -163,7 +163,7 @@ class AuthContext implements Context
         foreach (explode(',', $values) as $value) {
             $claimValues[] = $value;
         }
-        $this->claims = [$claimName => $claimValues];
+        $this->claims[] = [$claimName => $claimValues];
     }
 
     /**
