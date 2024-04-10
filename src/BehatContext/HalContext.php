@@ -249,18 +249,20 @@ class HalContext implements Context
 
     /**
      * @Then the response collection :collectionName should contain the resource:
+     * @Then the response collection :collectionName should contain the resource on position :position:
      * @throws Exception
      */
     public function theResponseCollectionShouldContainTheResource(
         string $collectionName,
-        TableNode $expectedResource
+        TableNode $expectedResource,
+        int $position = null
     ): void {
         /** @var stdClass $response */
         $response = $this->getLastResponseJsonData();
 
         $collection = $response->_embedded->$collectionName;
 
-        if (!$this->collectionContainsResource($collection, $expectedResource)) {
+        if (!$this->collectionContainsResource($collection, $expectedResource, $position)) {
             throw new \Exception('Resource not found.');
         }
     }
@@ -550,18 +552,27 @@ class HalContext implements Context
     }
 
     /**
-     * Return true if the given collection contains the expected resource, false otherwise.
+     * Return true if the given collection contains the expected resource, false otherwise. Optionnally, the position
+     * must match.
      *
      * @param stdClass[] $collection
      * @param TableNode $expectedResource
+     * @param int|null $position
      * @return bool
      */
-    protected function collectionContainsResource(array $collection, TableNode $expectedResource): bool
-    {
-        foreach ($collection as $receivedResource) {
-            if ($this->resourceMatch($expectedResource, $receivedResource)) {
-                return true;
+    protected function collectionContainsResource(
+        array $collection,
+        TableNode $expectedResource,
+        int $position = null
+    ): bool {
+        if (is_null($position)) {
+            foreach ($collection as $receivedResource) {
+                if ($this->resourceMatch($expectedResource, $receivedResource)) {
+                    return true;
+                }
             }
+        } elseif ($this->resourceMatch($expectedResource, $collection[$position - 1])) {
+            return true;
         }
 
         return false;
