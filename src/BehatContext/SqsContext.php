@@ -219,6 +219,8 @@ class SqsContext implements Context
                     $row[1] = false;
                 } elseif ($row[1] === 'true') {
                     $row[1] = true;
+                } elseif ($row[1] === 'null') {
+                    $row[1] = null;
                 }
 
                 if ($messageContent[$row[0]] != $row[1]) {
