@@ -346,7 +346,7 @@ class HalContext implements Context
 
         $entryFound = false;
 
-        /** @var array $entry */
+        /** @var array<string, string> $entry */
         foreach ($response as $entry) {
             if ($entry === $expectedEntry) {
                 $entryFound = true;
