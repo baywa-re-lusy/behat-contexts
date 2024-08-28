@@ -324,6 +324,60 @@ class HalContext implements Context
     }
 
     /**
+     * @Then the response array should contain the entry:
+     * @throws Exception
+     */
+    public function theResponseArrayShouldContainTheEntry(TableNode $expectedEntry): void
+    {
+        /** @var string[] $response */
+        $response = $this->getLastResponseJsonData(true);
+
+        if (!array_is_list($response)) {
+            throw new \Exception('Response is not an array.');
+        }
+
+        $expectedEntry = $expectedEntry->getRowsHash();
+
+        foreach ($expectedEntry as $key => &$value) {
+            if (in_array($value, ['true', 'false'])) {
+                $value = $value === 'true';
+            }
+        }
+
+        $entryFound = false;
+
+        /** @var array<string, string> $entry */
+        foreach ($response as $entry) {
+            if ($entry === $expectedEntry) {
+                $entryFound = true;
+                break;
+            }
+        }
+
+        if (!$entryFound) {
+            throw new \Exception("Response array doesn't contain expected entry.");
+        }
+    }
+
+    /**
+     * @Then the response array should contain :number entries
+     * @throws Exception
+     */
+    public function theResponseArrayShouldContainEntries(int $number): void
+    {
+        /** @var string[] $response */
+        $response = $this->getLastResponseJsonData(true);
+
+        if (!array_is_list($response)) {
+            throw new \Exception('Response is not an array.');
+        }
+
+        if (count($response) !== $number) {
+            throw new \Exception("Response array doesn't have the correct size.");
+        }
+    }
+
+    /**
      * @Then response should contain an embedded collection of :number :collectionName with the following entries:
      * @throws Exception
      */
