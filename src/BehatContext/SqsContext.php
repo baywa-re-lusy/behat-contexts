@@ -199,6 +199,10 @@ class SqsContext implements Context
     }
 
     /**
+     * Checks if a message with the given content has been queued.
+     * You can read a dynamic value from an environment variable using {env://ENV_VAR_NAME}.
+     * This can be useful in case there is a dynamically generated UUID.
+     *
      * @Then a message with the following content should have been queued in :queueName:
      * @throws Exception
      */
@@ -221,6 +225,8 @@ class SqsContext implements Context
                     $row[1] = true;
                 } elseif ($row[1] === 'null') {
                     $row[1] = null;
+                } elseif (preg_match('/^\{env:\/\/([A-Za-z0-9_]+)\}$/', $row[1], $matches)) {
+                    $row[1] = getenv($matches[1]);
                 }
 
                 if ($messageContent[$row[0]] != $row[1]) {
