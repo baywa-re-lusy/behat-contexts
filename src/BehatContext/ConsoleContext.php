@@ -8,7 +8,9 @@ use Exception;
 class ConsoleContext implements Context
 {
     protected ?int $lastReturnCode = null;
-    protected ?array $lastOutput   = [];
+
+    /** @var string[]|null */
+    protected ?array $lastOutput = [];
 
     /**
      * @When I call the console route :route
@@ -65,6 +67,11 @@ class ConsoleContext implements Context
     public function theCommandShouldHaveUpdatedTheLastExecutionTimestampIn(string $fileName): void
     {
         $timestamp = file_get_contents(getcwd() . '/' . $fileName);
+
+        if (!is_string($timestamp)) {
+            throw new \Exception('No timestamp in file.');
+        }
+
         $timestamp = \DateTime::createFromFormat('U', $timestamp);
 
         if (!$timestamp || $timestamp->getTimestamp() < time() - 5) {
