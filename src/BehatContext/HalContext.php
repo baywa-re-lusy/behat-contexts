@@ -255,7 +255,7 @@ class HalContext implements Context
     public function theResponseCollectionShouldContainTheResource(
         string $collectionName,
         TableNode $expectedResource,
-        int $position = null
+        ?int $position = null
     ): void {
         /** @var stdClass $response */
         $response = $this->getLastResponseJsonData();
@@ -493,7 +493,7 @@ class HalContext implements Context
      * @throws GuzzleException
      * @throws Exception
      */
-    public function iSendARequestToWithJsonBody(string $method, string $url, string $body = null): void
+    public function iSendARequestToWithJsonBody(string $method, string $url, ?string $body = null): void
     {
         // Replace placeholders in URL
         $url = $this->replacePlaceholdersInUrl($url);
@@ -617,7 +617,7 @@ class HalContext implements Context
     protected function collectionContainsResource(
         array $collection,
         TableNode $expectedResource,
-        int $position = null
+        ?int $position = null
     ): bool {
         if (is_null($position)) {
             foreach ($collection as $receivedResource) {
