@@ -2,6 +2,7 @@
 
 namespace BayWaReLusy\BehatContext;
 
+use BayWaReLusy\BehatContext\HalContext\ApiResponseFormat;
 use Behat\Behat\Context\Context;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Message\ResponseInterface;
@@ -14,6 +15,11 @@ class HalContext implements Context
 {
     protected ?HttpClient $httpClient = null;
     protected ?ResponseInterface $lastResponse = null;
+
+    /**
+     * @var ApiResponseFormat The response format to expect from the API. Default is HAL.
+     */
+    protected ApiResponseFormat $apiResponseFormat = ApiResponseFormat::HAL;
 
     /**
      * URL of the APIs webserver.
@@ -84,6 +90,12 @@ class HalContext implements Context
     public function setBaseUrl(string $baseUrl): HalContext
     {
         $this->baseUrl = $baseUrl;
+        return $this;
+    }
+
+    public function setApiResponseFormat(ApiResponseFormat $apiResponseFormat): self
+    {
+        $this->apiResponseFormat = $apiResponseFormat;
         return $this;
     }
 
@@ -260,7 +272,15 @@ class HalContext implements Context
         /** @var stdClass $response */
         $response = $this->getLastResponseJsonData();
 
-        $collection = $response->_embedded->$collectionName;
+        $collection = null;
+        switch ($this->apiResponseFormat) {
+            case ApiResponseFormat::HAL:
+                $collection = $response->_embedded->$collectionName;
+                break;
+            case ApiResponseFormat::JSONLD:
+                $collection = $response->$collectionName;
+                break;
+        }
 
         if (!$this->collectionContainsResource($collection, $expectedResource, $position)) {
             throw new \Exception('Resource not found.');
@@ -498,9 +518,14 @@ class HalContext implements Context
         // Replace placeholders in URL
         $url = $this->replacePlaceholdersInUrl($url);
 
+        $acceptHeader = match ($this->apiResponseFormat) {
+            ApiResponseFormat::HAL => 'application/hal+json',
+            ApiResponseFormat::JSONLD => 'application/ld+json',
+        };
+
         $headers =
             [
-                'Accept'       => 'application/hal+json',
+                'Accept'       => $acceptHeader,
                 'Content-Type' => 'application/json',
             ];
 
