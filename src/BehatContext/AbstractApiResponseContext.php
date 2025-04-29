@@ -156,4 +156,9 @@ abstract class AbstractApiResponseContext implements Context
             );
         }
     }
+
+    /**
+     * @Then error message on field :expectedField should be of type :expectedErrorType
+     */
+    abstract public function errorMessageOnFieldShouldBe(string $expectedField, string $expectedErrorType): void;
 }

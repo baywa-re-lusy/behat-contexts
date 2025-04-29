@@ -23,87 +23,22 @@ class JsonLdContext extends AbstractApiResponseContext
         }
     }
 
-    /**
-     * @Then error message on field :expectedField should be of type :expectedErrorType
-     */
     public function errorMessageOnFieldShouldBe(string $expectedField, string $expectedErrorType): void
     {
-        // Don't check anything if no specific erroneous field is expected in the response
-        if (empty($expectedField) && empty($expectedErrorType)) {
-            return;
-        }
-
-        $errors = json_decode($this->getLastResponse()->getBody()->getContents(), true);
-
-        // Check if the response contains validation messages
-        if (!array_key_exists('validation_messages', $errors)) {
-            throw new \Exception("No validation messages found.");
-        }
-
-        // If the request was on a single resource, "validation_messages" is a hash table with
-        // "fieldName => arrayOfMessages".
-        // If the request was on a collection, "validation_messages" is a list of hash tables with
-        // "fieldName => arrayOfMessages".
-        try {
-            if (!array_is_list($errors['validation_messages'])) {
-                $this->validateErrorFieldAndType($errors['validation_messages'], $expectedField, $expectedErrorType);
-            } else {
-                foreach ($errors['validation_messages'] as $errorMessagesForResource) {
-                    $this->validateErrorFieldAndType($errorMessagesForResource, $expectedField, $expectedErrorType);
-                }
-            }
-        } catch (\Exception $e) {
-            var_dump($errors);
-            throw $e;
-        }
+        throw new \Exception('Not implemented yet.');
     }
 
     /**
-     * @param array<string, array<string, string>> $errorMessagesForResource
-     * @param string $expectedField
-     * @param string $expectedErrorType
-     * @return void
+     * @Then the response should contain exactly :nbEntries entries
      * @throws Exception
      */
-    protected function validateErrorFieldAndType(
-        array $errorMessagesForResource,
-        string $expectedField,
-        string $expectedErrorType
-    ): void {
-        if (count($errorMessagesForResource) > 1) {
-            throw new \Exception(sprintf(
-                "The input caused errors on more than one field : %s.",
-                implode(' ,', array_keys($errorMessagesForResource))
-            ));
-        }
-
-        if (array_key_first($errorMessagesForResource) !== $expectedField) {
-            throw new \Exception(sprintf("The expected error field '%s' hasn't been found.", $expectedField));
-        }
-
-        if (count($errorMessagesForResource[$expectedField]) > 1) {
-            throw new \Exception(sprintf(
-                "The input caused more than one error on field '%s' => %s",
-                $expectedField,
-                implode(' ,', array_keys($errorMessagesForResource[$expectedField]))
-            ));
-        }
-
-        if (array_key_first($errorMessagesForResource[$expectedField]) !== $expectedErrorType) {
-            throw new \Exception(sprintf("The expected error type '%s' hasn't been found.", $expectedErrorType));
-        }
-    }
-
-    /**
-     * @Then the response should contain exactly :nbEntries :typeEntries
-     */
-    public function theResponseShouldContainExactly(string $nbEntries, string $typeEntries): void
+    public function theResponseShouldContainExactlyEntries(string $nbEntries): void
     {
         /** @var stdClass $response */
         $response = $this->getLastResponseJsonData();
 
-        if (count($response->_embedded->$typeEntries) !== (int)$nbEntries) {
-            throw new \Exception("The entry count doesn't match: " . count($response->_embedded->$typeEntries));
+        if (count($response->member) !== (int)$nbEntries) {
+            throw new \Exception("The entry count doesn't match: " . count($response->member));
         }
     }
 

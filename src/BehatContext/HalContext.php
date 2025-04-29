@@ -23,7 +23,10 @@ class HalContext extends AbstractApiResponseContext
     }
 
     /**
-     * @Then error message on field :expectedField should be of type :expectedErrorType
+     * @param string $expectedField
+     * @param string $expectedErrorType
+     * @return void
+     * @throws Exception
      */
     public function errorMessageOnFieldShouldBe(string $expectedField, string $expectedErrorType): void
     {
