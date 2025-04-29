@@ -381,14 +381,9 @@ class HalContext extends AbstractApiResponseContext
         // Replace placeholders in URL
         $url = $this->replacePlaceholdersInUrl($url);
 
-        $acceptHeader = match ($this->apiResponseFormat) {
-            ApiResponseFormat::HAL => 'application/hal+json',
-            ApiResponseFormat::JSONLD => 'application/ld+json',
-        };
-
         $headers =
             [
-                'Accept'       => $acceptHeader,
+                'Accept'       => 'application/hal+json',
                 'Content-Type' => 'application/json',
             ];
 
