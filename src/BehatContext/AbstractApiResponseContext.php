@@ -141,4 +141,19 @@ abstract class AbstractApiResponseContext implements Context
     {
         echo "\n\033[36m|  " . strtr($string, ["\n" => "\n|  "]) . "\033[0m";
     }
+
+    /**
+     * @Then response status code should be :statusCode
+     * @throws \Exception
+     */
+    public function responseStatusCodeShouldBe(string $statusCode): void
+    {
+        if ((string)$this->getLastResponse()->getStatusCode() !== $statusCode) {
+            throw new \Exception(
+                'HTTP code does not match ' . $statusCode .
+                ' (actual: ' . $this->getLastResponse()->getStatusCode() . ')' . PHP_EOL
+                . $this->getLastResponse()->getBody()
+            );
+        }
+    }
 }
