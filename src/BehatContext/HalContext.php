@@ -2,7 +2,6 @@
 
 namespace BayWaReLusy\BehatContext;
 
-use BayWaReLusy\BehatContext\HalContext\ApiResponseFormat;
 use GuzzleHttp\Exception\GuzzleException;
 use Behat\Gherkin\Node\TableNode;
 use GuzzleHttp\Client as HttpClient;
