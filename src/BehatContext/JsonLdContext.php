@@ -4,7 +4,6 @@ namespace BayWaReLusy\BehatContext;
 
 use BayWaReLusy\BehatContext\HalContext\ApiResponseFormat;
 use GuzzleHttp\Exception\GuzzleException;
-use Psr\Http\Message\ResponseInterface;
 use Behat\Gherkin\Node\TableNode;
 use GuzzleHttp\Client as HttpClient;
 use Exception;
@@ -13,14 +12,14 @@ use stdClass;
 class JsonLdContext extends AbstractApiResponseContext
 {
     /**
-     * @Then response should be an ApiProblem
+     * @Then response should be a Hydra error
      */
-    public function responseShouldBeAnApiProblem(): void
+    public function responseShouldBeAHydraError(): void
     {
         $contentType = $this->getLastResponse()->getHeader('Content-Type');
 
-        if ('application/problem+json' !== $contentType[0]) {
-            throw new \Exception(sprintf('Expected ApiProblem content type, but got %s.', $contentType[0]));
+        if ('application/ld+json' !== $contentType[0]) {
+            throw new \Exception(sprintf('Expected JSON-LD Hydra content type, but got %s.', $contentType[0]));
         }
     }
 
