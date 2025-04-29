@@ -4,12 +4,13 @@ namespace BayWaReLusy\BehatContext;
 
 use BayWaReLusy\BehatContext\HalContext\ApiResponseFormat;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\Http\Message\ResponseInterface;
 use Behat\Gherkin\Node\TableNode;
 use GuzzleHttp\Client as HttpClient;
 use Exception;
 use stdClass;
 
-class HalContext extends AbstractApiResponseContext
+class JsonLdContext extends AbstractApiResponseContext
 {
     /**
      * @Then response should be an ApiProblem
@@ -452,7 +453,7 @@ class HalContext extends AbstractApiResponseContext
      * @param string $value
      * @return $this
      */
-    public function addPlaceholder(string $key, string $value): HalContext
+    public function addPlaceholder(string $key, string $value): JsonLdContext
     {
         $this->placeholders[$key] = $value;
         return $this;
