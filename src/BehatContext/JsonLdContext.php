@@ -16,7 +16,7 @@ class JsonLdContext extends AbstractApiResponseContext
     {
         $contentType = $this->getLastResponse()->getHeader('Content-Type');
 
-        if (!str_starts_with($contentType[0], 'application/ld+json')) {
+        if (!str_starts_with($contentType[0], 'application/problem+json')) {
             throw new \Exception(sprintf('Expected JSON-LD Hydra content type, but got %s.', $contentType[0]));
         }
     }
