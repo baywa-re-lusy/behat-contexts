@@ -430,4 +430,18 @@ abstract class AbstractApiResponseContext implements Context
             throw new \Exception("Response array doesn't contain expected entry.");
         }
     }
+
+    protected function findResourceInCollection(
+        string $collectionName,
+        TableNode $expectedResource,
+        ?int $position = null
+    ): void {
+        /** @var stdClass $response */
+        $response   = $this->getLastResponseJsonData();
+        $collection = $response->_embedded->$collectionName;
+
+        if (!$this->collectionContainsResource($collection, $expectedResource, $position)) {
+            throw new \Exception('Resource not found.');
+        }
+    }
 }

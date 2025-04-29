@@ -118,13 +118,7 @@ class HalContext extends AbstractApiResponseContext
         TableNode $expectedResource,
         ?int $position = null
     ): void {
-        /** @var stdClass $response */
-        $response   = $this->getLastResponseJsonData();
-        $collection = $response->_embedded->$collectionName;
-
-        if (!$this->collectionContainsResource($collection, $expectedResource, $position)) {
-            throw new \Exception('Resource not found.');
-        }
+        $this->findResourceInCollection($collectionName, $expectedResource, $position);
     }
 
     /**
