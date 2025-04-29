@@ -49,7 +49,8 @@ class JsonLdContext extends AbstractApiResponseContext
         TableNode $expectedResource,
         ?int $position = null
     ): void {
-        $this->findResourceInCollection('member', $expectedResource, $position);
+        $response = $this->getLastResponseJsonData();
+        $this->findResourceInCollection($response->member, $expectedResource, $position);
     }
 
     /**
