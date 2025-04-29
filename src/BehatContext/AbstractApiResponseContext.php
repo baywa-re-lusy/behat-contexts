@@ -441,4 +441,22 @@ abstract class AbstractApiResponseContext implements Context
             throw new \Exception('Resource not found.');
         }
     }
+
+    /**
+     * @Then the response should be a JSON object containing:
+     * @throws \Exception
+     */
+    public function theResponseShouldBeAJsonObjectContaining(TableNode $expectedObject): void
+    {
+        /** @var string[] $response */
+        $response = $this->getLastResponseJsonData(true);
+
+        foreach ($expectedObject->getRows() as $row) {
+            if (!array_key_exists($row[0], $response)) {
+                throw new \Exception(sprintf("Key %s not found.", $row[0]));
+            }
+
+            $this->checkValue($row[0], $row[1], $response[$row[0]]);
+        }
+    }
 }
