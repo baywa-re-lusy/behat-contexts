@@ -133,17 +133,8 @@ class HalContext extends AbstractApiResponseContext
         ?int $position = null
     ): void {
         /** @var stdClass $response */
-        $response = $this->getLastResponseJsonData();
-
-        $collection = null;
-        switch ($this->apiResponseFormat) {
-            case ApiResponseFormat::HAL:
-                $collection = $response->_embedded->$collectionName;
-                break;
-            case ApiResponseFormat::JSONLD:
-                $collection = $response->$collectionName;
-                break;
-        }
+        $response   = $this->getLastResponseJsonData();
+        $collection = $response->_embedded->$collectionName;
 
         if (!$this->collectionContainsResource($collection, $expectedResource, $position)) {
             throw new \Exception('Resource not found.');
