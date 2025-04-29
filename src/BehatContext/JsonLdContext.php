@@ -2,7 +2,6 @@
 
 namespace BayWaReLusy\BehatContext;
 
-use BayWaReLusy\BehatContext\HalContext\ApiResponseFormat;
 use GuzzleHttp\Exception\GuzzleException;
 use Behat\Gherkin\Node\TableNode;
 use GuzzleHttp\Client as HttpClient;
@@ -53,17 +52,8 @@ class JsonLdContext extends AbstractApiResponseContext
         ?int $position = null
     ): void {
         /** @var stdClass $response */
-        $response = $this->getLastResponseJsonData();
-
-        $collection = null;
-        switch ($this->apiResponseFormat) {
-            case ApiResponseFormat::HAL:
-                $collection = $response->_embedded->$collectionName;
-                break;
-            case ApiResponseFormat::JSONLD:
-                $collection = $response->$collectionName;
-                break;
-        }
+        $response   = $this->getLastResponseJsonData();
+        $collection = $response->$collectionName;
 
         if (!$this->collectionContainsResource($collection, $expectedResource, $position)) {
             throw new \Exception('Resource not found.');
@@ -301,14 +291,9 @@ class JsonLdContext extends AbstractApiResponseContext
         // Replace placeholders in URL
         $url = $this->replacePlaceholdersInUrl($url);
 
-        $acceptHeader = match ($this->apiResponseFormat) {
-            ApiResponseFormat::HAL => 'application/hal+json',
-            ApiResponseFormat::JSONLD => 'application/ld+json',
-        };
-
         $headers =
             [
-                'Accept'       => $acceptHeader,
+                'Accept'       => 'application/ld+json',
                 'Content-Type' => 'application/json',
             ];
 
