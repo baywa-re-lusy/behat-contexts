@@ -49,24 +49,24 @@ class JsonLdContext extends AbstractApiResponseContext
         TableNode $expectedResource,
         ?int $position = null
     ): void {
-        $response = $this->getLastResponseJsonData();
-        $this->findResourceInCollection($response->member, $expectedResource, $position);
-    }
-
-    /**
-     * @Then the response collection :collectionName should not contain the resource:
-     * @throws Exception
-     */
-    public function theResponseCollectionShouldNotContainTheResource(
-        string $collectionName,
-        TableNode $expectedResource
-    ): void {
         /** @var stdClass $response */
         $response = $this->getLastResponseJsonData();
 
-        $collection = $response->_embedded->$collectionName;
+        if (!$this->collectionContainsResource($response->member, $expectedResource, $position)) {
+            throw new \Exception("Resource should have been found.");
+        }
+    }
 
-        if ($this->collectionContainsResource($collection, $expectedResource)) {
+    /**
+     * @Then the response collection should not contain the resource:
+     * @throws Exception
+     */
+    public function theResponseCollectionShouldNotContainTheResource(TableNode $expectedResource): void
+    {
+        /** @var stdClass $response */
+        $response = $this->getLastResponseJsonData();
+
+        if ($this->collectionContainsResource($response->member, $expectedResource)) {
             throw new \Exception("Resource shouldn't have been found.");
         }
     }

@@ -431,17 +431,6 @@ abstract class AbstractApiResponseContext implements Context
         }
     }
 
-    protected function findResourceInCollection(
-        array $collection,
-        TableNode $expectedResource,
-        ?int $position = null
-    ): void {
-        /** @var stdClass $response */
-        if (!$this->collectionContainsResource($collection, $expectedResource, $position)) {
-            throw new \Exception('Resource not found.');
-        }
-    }
-
     /**
      * @Then the response should be a JSON object containing:
      * @throws \Exception
