@@ -141,26 +141,6 @@ class HalContext extends AbstractApiResponseContext
     }
 
     /**
-     * @Then the response should be a JSON object matching :json
-     * @throws Exception
-     */
-    public function theResponseShouldBeAJsonObjectMatching(string $json): void
-    {
-        if (str_starts_with($json, 'file://')) {
-            $fileName = $this->getJsonFilesPath() . DIRECTORY_SEPARATOR . str_replace('file://', '', $json);
-            $json     = file_get_contents($fileName);
-
-            if (!$json) {
-                throw new Exception(sprintf("File %s not found.", $fileName));
-            }
-        }
-
-        if ($this->getLastResponseJsonData(true) !== json_decode($json, true)) {
-            throw new Exception('Invalid answer.');
-        }
-    }
-
-    /**
      * @Then response should contain an embedded collection of :number :collectionName with the following entries:
      * @throws Exception
      */
@@ -271,48 +251,16 @@ class HalContext extends AbstractApiResponseContext
     }
 
     /**
-     * @When I send a :method request to :url
-     * @When I send a :method request to :url with JSON body :body
-     * @throws GuzzleException
-     * @throws Exception
+     * @inheritDoc
      */
     public function iSendARequestToWithJsonBody(string $method, string $url, ?string $body = null): void
     {
-        // Replace placeholders in URL
-        $url = $this->replacePlaceholdersInUrl($url);
-
         $headers =
             [
                 'Accept'       => 'application/hal+json',
                 'Content-Type' => 'application/json',
             ];
 
-        // Check if custom headers have been added
-        if (!empty($this->headers)) {
-            $headers = array_merge($headers, $this->headers);
-        }
-
-        // Check if there is a token to add
-        if ($this->bearerToken) {
-            $headers['Authorization'] = 'Bearer ' . $this->bearerToken;
-        }
-
-        $params = [
-            'headers'     => $headers,
-            'verify'      => false,
-            'http_errors' => false,
-            'query'       => $this->getQueryString(),
-        ];
-
-        // Add data to http body
-        if (!is_null($body)) {
-            if (str_starts_with($body, 'file://')) {
-                $body = file_get_contents($this->getJsonFilesPath() . DIRECTORY_SEPARATOR . substr($body, 7));
-            }
-
-            $params['body'] = $body;
-        }
-
-        $this->setLastResponse($this->getHttpClient()->request(strtoupper($method), $url, $params));
+        $this->sendRequestWithJsonBody($method, $url, $headers, $body);
     }
 }
