@@ -2,132 +2,13 @@
 
 namespace BayWaReLusy\BehatContext;
 
-use Behat\Behat\Context\Context;
 use GuzzleHttp\Exception\GuzzleException;
-use Psr\Http\Message\ResponseInterface;
 use Behat\Gherkin\Node\TableNode;
-use GuzzleHttp\Client as HttpClient;
 use Exception;
 use stdClass;
 
-class HalContext implements Context
+class HalContext extends AbstractApiResponseContext
 {
-    protected ?HttpClient $httpClient = null;
-    protected ?ResponseInterface $lastResponse = null;
-
-    /**
-     * URL of the APIs webserver.
-     * @var string|null
-     */
-    protected ?string $baseUrl = null;
-
-    /**
-     * Path to the directory with example JSON files.
-     * @var string
-     */
-    protected string $jsonFilesPath;
-
-    /**
-     * The headers to add to outgoing requests.
-     * @var string[]
-     */
-    protected array $headers = [];
-
-    /**
-     * The API Bearer token used for Authentication/Authorization.
-     * @var string|null
-     */
-    protected ?string $bearerToken = null;
-
-    /**
-     * The query string to add (in URI Template format).
-     * @var string[]
-     */
-    protected array $queryString = [];
-
-    /**
-     * List of placeholder key/value pairs to replace in URL.
-     * @var string[]
-     */
-    protected array $placeholders = [];
-
-    /**
-     * @return string|null
-     */
-    public function getBearerToken(): ?string
-    {
-        return $this->bearerToken;
-    }
-
-    /**
-     * @param string|null $bearerToken
-     * @return HalContext
-     */
-    public function setBearerToken(?string $bearerToken): HalContext
-    {
-        $this->bearerToken = $bearerToken;
-        return $this;
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getBaseUrl(): ?string
-    {
-        return $this->baseUrl;
-    }
-
-    /**
-     * @param string $baseUrl
-     * @return HalContext
-     */
-    public function setBaseUrl(string $baseUrl): HalContext
-    {
-        $this->baseUrl = $baseUrl;
-        return $this;
-    }
-
-    /**
-     * @return ResponseInterface|null
-     * @throws Exception
-     */
-    public function getLastResponse(): ?ResponseInterface
-    {
-        if (null === $this->lastResponse) {
-            throw new Exception('No request sent yet.');
-        }
-
-        return $this->lastResponse;
-    }
-
-    /**
-     * @param ResponseInterface|null $lastResponse
-     * @return HalContext
-     */
-    public function setLastResponse(?ResponseInterface $lastResponse): HalContext
-    {
-        $this->lastResponse = $lastResponse;
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
-    public function getJsonFilesPath(): string
-    {
-        return rtrim($this->jsonFilesPath, '/');
-    }
-
-    /**
-     * @param string $jsonFilesPath
-     * @return HalContext
-     */
-    public function setJsonFilesPath(string $jsonFilesPath): HalContext
-    {
-        $this->jsonFilesPath = $jsonFilesPath;
-        return $this;
-    }
-
     /**
      * @Then response should be an ApiProblem
      */
@@ -141,22 +22,10 @@ class HalContext implements Context
     }
 
     /**
-     * @Then response status code should be :statusCode
+     * @param string $expectedField
+     * @param string $expectedErrorType
+     * @return void
      * @throws Exception
-     */
-    public function responseStatusCodeShouldBe(string $statusCode): void
-    {
-        if ((string)$this->getLastResponse()->getStatusCode() !== $statusCode) {
-            throw new \Exception(
-                'HTTP code does not match ' . $statusCode .
-                ' (actual: ' . $this->getLastResponse()->getStatusCode() . ')' . PHP_EOL
-                . $this->getLastResponse()->getBody()
-            );
-        }
-    }
-
-    /**
-     * @Then error message on field :expectedField should be of type :expectedErrorType
      */
     public function errorMessageOnFieldShouldBe(string $expectedField, string $expectedErrorType): void
     {
@@ -240,14 +109,6 @@ class HalContext implements Context
     }
 
     /**
-     * @Then echo last response
-     */
-    public function echoLastResponse(): void
-    {
-        $this->printDebug($this->getLastResponse()->getBody());
-    }
-
-    /**
      * @Then the response collection :collectionName should contain the resource:
      * @Then the response collection :collectionName should contain the resource on position :position:
      * @throws Exception
@@ -260,10 +121,8 @@ class HalContext implements Context
         /** @var stdClass $response */
         $response = $this->getLastResponseJsonData();
 
-        $collection = $response->_embedded->$collectionName;
-
-        if (!$this->collectionContainsResource($collection, $expectedResource, $position)) {
-            throw new \Exception('Resource not found.');
+        if (!$this->collectionContainsResource($response->_embedded->$collectionName, $expectedResource, $position)) {
+            throw new \Exception("Resource should have been found.");
         }
     }
 
@@ -282,98 +141,6 @@ class HalContext implements Context
 
         if ($this->collectionContainsResource($collection, $expectedResource)) {
             throw new \Exception("Resource shouldn't have been found.");
-        }
-    }
-
-    /**
-     * @Then the response should be a JSON object containing:
-     * @throws Exception
-     */
-    public function theResponseShouldBeAJsonObjectContaining(TableNode $expectedObject): void
-    {
-        /** @var string[] $response */
-        $response = $this->getLastResponseJsonData(true);
-
-        foreach ($expectedObject->getRows() as $row) {
-            if (!array_key_exists($row[0], $response)) {
-                throw new \Exception(sprintf("Key %s not found.", $row[0]));
-            }
-
-            $this->checkValue($row[0], $row[1], $response[$row[0]]);
-        }
-    }
-
-    /**
-     * @Then the response should be a JSON object matching :json
-     * @throws Exception
-     */
-    public function theResponseShouldBeAJsonObjectMatching(string $json): void
-    {
-        if (str_starts_with($json, 'file://')) {
-            $fileName = $this->getJsonFilesPath() . DIRECTORY_SEPARATOR . str_replace('file://', '', $json);
-            $json     = file_get_contents($fileName);
-
-            if (!$json) {
-                throw new Exception(sprintf("File %s not found.", $fileName));
-            }
-        }
-
-        if ($this->getLastResponseJsonData(true) !== json_decode($json, true)) {
-            throw new Exception('Invalid answer.');
-        }
-    }
-
-    /**
-     * @Then the response array should contain the entry:
-     * @throws Exception
-     */
-    public function theResponseArrayShouldContainTheEntry(TableNode $expectedEntry): void
-    {
-        /** @var string[] $response */
-        $response = $this->getLastResponseJsonData(true);
-
-        if (!array_is_list($response)) {
-            throw new \Exception('Response is not an array.');
-        }
-
-        $expectedEntry = $expectedEntry->getRowsHash();
-
-        foreach ($expectedEntry as $key => &$value) {
-            if (in_array($value, ['true', 'false'])) {
-                $value = $value === 'true';
-            }
-        }
-
-        $entryFound = false;
-
-        /** @var array<string, string> $entry */
-        foreach ($response as $entry) {
-            if ($entry === $expectedEntry) {
-                $entryFound = true;
-                break;
-            }
-        }
-
-        if (!$entryFound) {
-            throw new \Exception("Response array doesn't contain expected entry.");
-        }
-    }
-
-    /**
-     * @Then the response array should contain :number entries
-     * @throws Exception
-     */
-    public function theResponseArrayShouldContainEntries(int $number): void
-    {
-        /** @var string[] $response */
-        $response = $this->getLastResponseJsonData(true);
-
-        if (!array_is_list($response)) {
-            throw new \Exception('Response is not an array.');
-        }
-
-        if (count($response) !== $number) {
-            throw new \Exception("Response array doesn't have the correct size.");
         }
     }
 
@@ -488,271 +255,16 @@ class HalContext implements Context
     }
 
     /**
-     * @When I send a :method request to :url
-     * @When I send a :method request to :url with JSON body :body
-     * @throws GuzzleException
-     * @throws Exception
+     * @inheritDoc
      */
     public function iSendARequestToWithJsonBody(string $method, string $url, ?string $body = null): void
     {
-        // Replace placeholders in URL
-        $url = $this->replacePlaceholdersInUrl($url);
-
         $headers =
             [
                 'Accept'       => 'application/hal+json',
                 'Content-Type' => 'application/json',
             ];
 
-        // Check if custom headers have been added
-        if (!empty($this->headers)) {
-            $headers = array_merge($headers, $this->headers);
-        }
-
-        // Check if there is a token to add
-        if ($this->bearerToken) {
-            $headers['Authorization'] = 'Bearer ' . $this->bearerToken;
-        }
-
-        $params = [
-            'headers'     => $headers,
-            'verify'      => false,
-            'http_errors' => false,
-            'query'       => $this->getQueryString(),
-        ];
-
-        // Add data to http body
-        if (!is_null($body)) {
-            if (str_starts_with($body, 'file://')) {
-                $body = file_get_contents($this->getJsonFilesPath() . DIRECTORY_SEPARATOR . substr($body, 7));
-            }
-
-            $params['body'] = $body;
-        }
-
-        $this->setLastResponse($this->getHttpClient()->request(strtoupper($method), $url, $params));
-    }
-
-    /**
-     * @Given query string parameter :name with value :value
-     */
-    public function queryStringParameterWithValue(string $name, string $value): void
-    {
-        $this->queryString[$name] = $value;
-    }
-
-    /**
-     * @Given header :name with value :value
-     */
-    public function headerWithValue(string $name, string $value): void
-    {
-        $this->headers[$name] = $value;
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getQueryString(): array
-    {
-        return $this->queryString;
-    }
-
-    /**
-     * Add a placeholder to replace later in URL.
-     *
-     * @param string $key
-     * @param string $value
-     * @return $this
-     */
-    public function addPlaceholder(string $key, string $value): HalContext
-    {
-        $this->placeholders[$key] = $value;
-        return $this;
-    }
-
-    /**
-     * @throws Exception
-     */
-    protected function getHttpClient(): HttpClient
-    {
-        if (!$this->httpClient) {
-            if (!$this->getBaseUrl()) {
-                throw new Exception('Base URL of the APIs webserver needs to be set first.');
-            }
-
-            $this->httpClient = new HttpClient(
-                [
-                    'base_uri' => $this->getBaseUrl(),
-                    'verify'   => false,
-                ]
-            );
-        }
-
-        return $this->httpClient;
-    }
-
-    protected function replacePlaceholdersInUrl(string $url): string
-    {
-        preg_match('/{([A-Z_0-9]+)}/', $url, $placeholders);
-
-        if (count($placeholders) > 1) {
-            array_shift($placeholders);
-            foreach ($placeholders as $placeholder) {
-                $url = str_replace('{' . $placeholder . '}', $this->placeholders[$placeholder], $url);
-            }
-        }
-
-        return $url;
-    }
-
-    /**
-     * Return true if the given collection contains the expected resource, false otherwise. Optionnally, the position
-     * must match.
-     *
-     * @param stdClass[] $collection
-     * @param TableNode $expectedResource
-     * @param int|null $position
-     * @return bool
-     */
-    protected function collectionContainsResource(
-        array $collection,
-        TableNode $expectedResource,
-        ?int $position = null
-    ): bool {
-        if (is_null($position)) {
-            foreach ($collection as $receivedResource) {
-                if ($this->resourceMatch($expectedResource, $receivedResource)) {
-                    return true;
-                }
-            }
-        } elseif ($this->resourceMatch($expectedResource, $collection[$position - 1])) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param TableNode $expectedResource
-     * @param stdClass $receivedResource
-     * @return bool
-     */
-    protected function resourceMatch(TableNode $expectedResource, stdClass $receivedResource): bool
-    {
-        $expectedResource = $expectedResource->getRowsHash();
-        $resourceFound    = true;
-
-        foreach ($expectedResource as $key => $val) {
-            // Check if value is a boolean or a link to a file
-            $val = $this->getOrCastValue($val);
-
-            if (
-                (!property_exists($receivedResource, $key) || $val != $receivedResource->$key) &&
-                (
-                    !property_exists($receivedResource, '_embedded') ||
-                    !property_exists($receivedResource->_embedded, $key) ||
-                    $receivedResource->_embedded->$key->id != $val
-                )
-            ) {
-                $resourceFound = false;
-                break;
-            }
-        }
-
-        return $resourceFound;
-    }
-
-    /**
-     * @param bool $returnAsAssociativeArray
-     * @return stdClass|string[]
-     * @throws Exception
-     */
-    protected function getLastResponseJsonData(bool $returnAsAssociativeArray = false): array|stdClass
-    {
-        $responseBody = $this->getLastResponse()->getBody();
-        $data         = json_decode($responseBody, $returnAsAssociativeArray);
-
-        if (JSON_ERROR_NONE !== json_last_error()) {
-            throw new \Exception(sprintf('Invalid json body: %s', $responseBody));
-        }
-
-        return $data;
-    }
-
-    /**
-     * Prints beautified debug string.
-     *
-     * @param string $string debug string
-     */
-    protected function printDebug(string $string): void
-    {
-        echo "\n\033[36m|  " . strtr($string, ["\n" => "\n|  "]) . "\033[0m";
-    }
-
-    /**
-     * Transform the given value into the correct type/content.
-     *
-     * @param string $value
-     * @return mixed
-     */
-    protected function getOrCastValue(string $value): mixed
-    {
-        if ($value === 'true') {
-            $value = true;
-        } elseif ($value === 'false') {
-            $value = false;
-        } elseif (str_starts_with($value, 'file://')) {
-            $value = file_get_contents($this->getJsonFilesPath() . DIRECTORY_SEPARATOR . substr($value, 7));
-        }
-
-        // Check if value is JSON
-        if (is_string($value)) {
-            $json = json_decode($value);
-            if (json_last_error() === JSON_ERROR_NONE && !preg_match('/^\d+$/', $value)) {
-                $value = $json;
-            }
-        }
-
-        return $value;
-    }
-
-    /**
-     * @param string $key
-     * @param mixed $expectedValue
-     * @param mixed $actualValue
-     * @return void
-     * @throws Exception
-     */
-    protected function checkValue(string $key, mixed $expectedValue, mixed $actualValue): void
-    {
-        if (str_starts_with($expectedValue, 'file://')) {
-            $fileName      = $this->getJsonFilesPath() . DIRECTORY_SEPARATOR . substr($expectedValue, 7);
-            $expectedValue = file_get_contents($fileName);
-
-            if (!$expectedValue) {
-                throw new Exception(sprintf("File %s not found.", $fileName));
-            }
-        }
-
-        json_decode($expectedValue);
-        if (json_last_error() == JSON_ERROR_NONE) {
-            $expectedValue = json_decode((string)$expectedValue, true);
-        }
-
-        if ($expectedValue === '') {
-            $expectedValue = null;
-        }
-
-        if (is_string($expectedValue) && str_starts_with($expectedValue, 'match://')) {
-            if (!preg_match(substr($expectedValue, 8), $actualValue)) {
-                throw new \Exception(sprintf("Value %s doesn't match regexp %s.", $actualValue, $expectedValue));
-            }
-        } elseif ($actualValue != $expectedValue) {
-            throw new \Exception(sprintf(
-                "Wrong value %s for key %s",
-                var_export($actualValue, true),
-                $key
-            ));
-        }
+        $this->sendRequestWithJsonBody($method, $url, $headers, $body);
     }
 }

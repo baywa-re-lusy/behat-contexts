@@ -10,8 +10,8 @@ use CurlHandle;
 
 class AuthContext implements Context
 {
-    /** @var HalContext */
-    protected HalContext $halContext;
+    /** @var AbstractApiResponseContext */
+    protected AbstractApiResponseContext $apiResponseContext;
 
     /** @var string Server Address */
     protected string $serverAddress;
@@ -54,25 +54,36 @@ class AuthContext implements Context
     }
 
     /**
-     * @return HalContext
+     * @return AbstractApiResponseContext
      * @throws Exception
      */
-    public function getHalContext(): HalContext
+    public function getApiResponseContext(): AbstractApiResponseContext
     {
-        if (!isset($this->halContext)) {
-            throw new Exception('HalContext must be injected into AuthContext before proceeding.');
+        if (!isset($this->apiResponseContext)) {
+            throw new Exception('ApiResponseContext must be injected into AuthContext before proceeding.');
         }
 
-        return $this->halContext;
+        return $this->apiResponseContext;
+    }
+
+    /**
+     * @param AbstractApiResponseContext $apiResponseContext
+     * @return AuthContext
+     */
+    public function setApiResponseContext(AbstractApiResponseContext $apiResponseContext): AuthContext
+    {
+        $this->apiResponseContext = $apiResponseContext;
+        return $this;
     }
 
     /**
      * @param HalContext $halContext
-     * @return AuthContext
+     * @return $this
+     * @deprecated Use setApiResponseContext() instead.
      */
     public function setHalContext(HalContext $halContext): AuthContext
     {
-        $this->halContext = $halContext;
+        $this->apiResponseContext = $halContext;
         return $this;
     }
 
@@ -146,11 +157,11 @@ class AuthContext implements Context
                     throw new Exception(sprintf('Invalid Auth Server Response: %s', var_export($response, true)));
                 }
 
-                $this->getHalContext()->setBearerToken($response['access_token']);
+                $this->getApiResponseContext()->setBearerToken($response['access_token']);
                 putenv($usernameHashKey . '=' . $response['access_token']);
             }
         } else {
-            $this->getHalContext()->setBearerToken(getenv($usernameHashKey));
+            $this->getApiResponseContext()->setBearerToken(getenv($usernameHashKey));
         }
     }
 
@@ -202,10 +213,10 @@ class AuthContext implements Context
             } else {
                 $response = json_decode($response, true);
                 putenv($usernameHashKey . '=' . $response['access_token']);
-                $this->getHalContext()->setBearerToken($response['access_token']);
+                $this->getApiResponseContext()->setBearerToken($response['access_token']);
             }
         } else {
-            $this->getHalContext()->setBearerToken(getenv($usernameHashKey));
+            $this->getApiResponseContext()->setBearerToken(getenv($usernameHashKey));
         }
     }
 
