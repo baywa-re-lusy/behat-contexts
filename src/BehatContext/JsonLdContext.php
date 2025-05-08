@@ -43,7 +43,6 @@ class JsonLdContext extends AbstractApiResponseContext
     /**
      * @Then the response collection should contain the resource:
      * @Then the response collection should contain the resource on position :position:
-     * @throws Exception
      */
     public function theResponseCollectionShouldContainTheResource(
         TableNode $expectedResource,

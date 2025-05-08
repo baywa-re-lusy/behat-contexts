@@ -325,6 +325,14 @@ abstract class AbstractApiResponseContext implements Context
         }
     }
 
+    /**
+     * @param string $method
+     * @param string $url
+     * @param array<string, string> $headers
+     * @param string|null $body
+     * @return void
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
     protected function sendRequestWithJsonBody(string $method, string $url, array $headers, ?string $body = null): void
     {
         // Replace placeholders in URL
@@ -431,6 +439,11 @@ abstract class AbstractApiResponseContext implements Context
         return $resourceFound;
     }
 
+    /**
+     * @param bool $returnAsAssociativeArray
+     * @return array<string, mixed>|stdClass
+     * @throws Exception
+     */
     protected function getLastResponseJsonData(bool $returnAsAssociativeArray = false): array|stdClass
     {
         $responseBody = $this->getLastResponse()->getBody();
