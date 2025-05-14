@@ -2,7 +2,6 @@
 
 namespace BayWaReLusy\BehatContext;
 
-use GuzzleHttp\Exception\GuzzleException;
 use Behat\Gherkin\Node\TableNode;
 use Exception;
 use stdClass;
