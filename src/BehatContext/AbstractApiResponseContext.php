@@ -266,10 +266,10 @@ abstract class AbstractApiResponseContext implements Context
         $entryFound = false;
 
         foreach ($response as $entry) {
-            // ✅ check if all expected key/value pairs exist in this entry
+            // check if all expected key/value pairs exist in this entry
             $matches = true;
             foreach ($expectedEntry as $key => $expectedValue) {
-                if (!array_key_exists($key, $entry) || $entry[$key] !== $expectedValue) {
+                if (!array_key_exists($key, $entry) || $entry[$key] != $expectedValue) {
                     $matches = false;
                     break;
                 }
