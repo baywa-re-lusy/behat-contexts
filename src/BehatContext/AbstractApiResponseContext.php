@@ -7,6 +7,7 @@ use Behat\Gherkin\Node\TableNode;
 use Exception;
 use GuzzleHttp\Client as HttpClient;
 use Psr\Http\Message\ResponseInterface;
+use Ramsey\Uuid\Uuid;
 use stdClass;
 
 abstract class AbstractApiResponseContext implements Context
@@ -268,8 +269,22 @@ abstract class AbstractApiResponseContext implements Context
         foreach ($response as $entry) {
             // check if all expected key/value pairs exist in this entry
             $matches = true;
+
             foreach ($expectedEntry as $key => $expectedValue) {
-                if (!array_key_exists($key, $entry) || $entry[$key] != $expectedValue) {
+                if (!array_key_exists($key, $entry)) {
+                    $matches = false;
+                    break;
+                }
+
+                $actualValue = $entry[$key];
+
+                if ($expectedValue === '<UUID>') {
+                    // UUID validation
+                    if (!Uuid::isValid($actualValue)) {
+                        $matches = false;
+                        break;
+                    }
+                } elseif ($actualValue !== $expectedValue) {
                     $matches = false;
                     break;
                 }
