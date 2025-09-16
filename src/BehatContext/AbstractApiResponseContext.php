@@ -247,7 +247,7 @@ abstract class AbstractApiResponseContext implements Context
      */
     public function theResponseArrayShouldContainTheEntry(TableNode $expectedEntry): void
     {
-        /** @var string[] $response */
+        /** @var array<array<string, mixed>> $response */
         $response = $this->getLastResponseJsonData(true);
 
         if (!array_is_list($response)) {
@@ -256,17 +256,26 @@ abstract class AbstractApiResponseContext implements Context
 
         $expectedEntry = $expectedEntry->getRowsHash();
 
+        // Normalize booleans
         foreach ($expectedEntry as $key => &$value) {
-            if (in_array($value, ['true', 'false'])) {
+            if (in_array($value, ['true', 'false'], true)) {
                 $value = $value === 'true';
             }
         }
 
         $entryFound = false;
 
-        /** @var array<string, string> $entry */
         foreach ($response as $entry) {
-            if ($entry === $expectedEntry) {
+            // ✅ check if all expected key/value pairs exist in this entry
+            $matches = true;
+            foreach ($expectedEntry as $key => $expectedValue) {
+                if (!array_key_exists($key, $entry) || $entry[$key] !== $expectedValue) {
+                    $matches = false;
+                    break;
+                }
+            }
+
+            if ($matches) {
                 $entryFound = true;
                 break;
             }
