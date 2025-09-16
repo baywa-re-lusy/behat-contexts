@@ -284,7 +284,7 @@ abstract class AbstractApiResponseContext implements Context
                         $matches = false;
                         break;
                     }
-                } elseif ($actualValue !== $expectedValue) {
+                } elseif ($actualValue != $expectedValue) {
                     $matches = false;
                     break;
                 }
