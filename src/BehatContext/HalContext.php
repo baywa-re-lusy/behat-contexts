@@ -236,11 +236,11 @@ class HalContext extends AbstractApiResponseContext
         }
 
         // --- Verify total count ---
-        if (count($subCollection) !== (int)$number) {
+        if (iterator_count($subCollection) !== (int)$number) {
             throw new \RuntimeException(sprintf(
                 "Sub-collection '%s' contains %d elements instead of expected %d",
                 $subCollectionName,
-                count($subCollection),
+                iterator_count($subCollection),
                 $number
             ));
         }
