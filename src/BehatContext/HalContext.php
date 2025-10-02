@@ -165,7 +165,10 @@ class HalContext extends AbstractApiResponseContext
             }
 
             if (!$found) {
-                throw new \Exception("$expectedCollectionKey => $expectedCollectionValue not found in collection.");
+                throw new \Exception(
+                    "$expectedCollectionKey => " . var_export($expectedCollectionValue, true) .
+                    " not found in collection."
+                );
             }
         }
 
