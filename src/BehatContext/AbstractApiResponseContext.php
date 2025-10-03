@@ -445,7 +445,9 @@ abstract class AbstractApiResponseContext implements Context
 
         foreach ($expectedResource as $key => $val) {
             // Check if value is a boolean or a link to a file
-            $val = $this->getOrCastValue($val);
+            if (is_string($val)) {
+                $val = $this->getOrCastValue($val);
+            }
 
             if (
                 (!property_exists($receivedResource, $key) || $val != $receivedResource->$key) &&
