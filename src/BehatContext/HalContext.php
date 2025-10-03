@@ -207,7 +207,8 @@ class HalContext extends AbstractApiResponseContext
             throw new \RuntimeException("Entry with id $mainCollectionEntryId not found in $mainCollectionName");
         }
 
-        $subCollection = $mainCollectionEntry->$subCollectionName ?? [];
+        $subCollection = $mainCollectionEntry->_embedded->$subCollectionName ?? [];
+
         if (!is_iterable($subCollection)) {
             throw new \RuntimeException("Sub collection '$subCollectionName' not found or not iterable.");
         }
