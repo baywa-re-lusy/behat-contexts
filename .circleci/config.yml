@@ -24,7 +24,7 @@ jobs:
           name: PHPCS
           command: |
             mkdir -p results/PHPCS
-            vendor/bin/phpcs src
+            vendor/bin/phpcs
       - store_test_results:
           path: results
       - store_artifacts:
