@@ -182,6 +182,74 @@ class HalContext extends AbstractApiResponseContext
     }
 
     /**
+     * @Then response collection entry with ID :mainCollectionEntryId in collection :mainCollectionName should contain an embedded collection of :number :subCollectionName with the following entries:
+     */
+    public function responseCollectionEntryWithIdShouldContainAnEmbeddedCollectionOfWithTheFollowingEntries(
+        string $mainCollectionName,
+        string $mainCollectionEntryId,
+        string $number,
+        string $subCollectionName,
+        TableNode $expectedCollectionEntries
+    ): void {
+        /** @var \stdClass $response */
+        $response = $this->getLastResponseJsonData();
+
+        // --- Find the main entry by ID ---
+        $mainCollectionEntry = null;
+        foreach ($response->_embedded->$mainCollectionName as $entry) {
+            if ($entry->id === $mainCollectionEntryId) {
+                $mainCollectionEntry = $entry;
+                break;
+            }
+        }
+
+        if ($mainCollectionEntry === null) {
+            throw new \RuntimeException("Entry with id $mainCollectionEntryId not found in $mainCollectionName");
+        }
+
+        $subCollection = $mainCollectionEntry->$subCollectionName ?? [];
+        if (!is_iterable($subCollection)) {
+            throw new \RuntimeException("Sub collection '$subCollectionName' not found or not iterable.");
+        }
+
+        // --- Match each expected row against at least one entry in the sub collection ---
+        foreach ($expectedCollectionEntries->getHash() as $expectedRow) {
+            $found = false;
+
+            foreach ($subCollection as $collectionEntry) {
+                $matches = true;
+                foreach ($expectedRow as $field => $expectedValue) {
+                    $actualValue = $collectionEntry->$field ?? null;
+                    if ($actualValue != $expectedValue) { // loose compare: "123" == 123
+                        $matches = false;
+                        break;
+                    }
+                }
+                if ($matches) {
+                    $found = true;
+                    break;
+                }
+            }
+
+            if (!$found) {
+                throw new \RuntimeException(
+                    'No entry found in sub-collection matching: ' . json_encode($expectedRow, JSON_UNESCAPED_SLASHES)
+                );
+            }
+        }
+
+        // --- Verify total count ---
+        if (iterator_count($subCollection) !== (int)$number) {
+            throw new \RuntimeException(sprintf(
+                "Sub-collection '%s' contains %d elements instead of expected %d",
+                $subCollectionName,
+                iterator_count($subCollection),
+                $number
+            ));
+        }
+    }
+
+    /**
      * @Then response should contain an embedded resource :resource with property :property and value :value
      * @throws Exception
      */

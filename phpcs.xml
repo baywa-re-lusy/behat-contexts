@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
-<ruleset name="BayWa r.e. Behat Contexts">
-    <description>BayWa r.e. Coding Standard</description>
+<ruleset name="BayWa r.e. Coding Standard">
+    <description>PHPCS rules for Behat contexts</description>
+
+    <file>src</file>
 
     <!-- display progress -->
     <arg value="p"/>
@@ -8,7 +10,15 @@
     <arg name="extensions" value="php,dist"/>
     <arg name="report-full"/>
     <arg name="report-junit" value="./results/PHPCS/result.xml"/>
+    <arg name="cache" value="./.phpcs-cache"/>
 
     <!-- inherit rules from: -->
     <rule ref="PSR12"/>
+
+    <!-- Override LineLength -->
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="ignoreComments" value="true"/>
+        </properties>
+    </rule>
 </ruleset>
