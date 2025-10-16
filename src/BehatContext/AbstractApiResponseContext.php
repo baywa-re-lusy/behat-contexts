@@ -278,6 +278,12 @@ abstract class AbstractApiResponseContext implements Context
 
                 $actualValue = $entry[$key];
 
+                // If the expected value is a JSON string, decode it
+                $expectedDecoded = json_decode($expectedValue, true);
+                if ($expectedDecoded !== null) {
+                    $expectedValue = $expectedDecoded;
+                }
+
                 if ($expectedValue === '<UUID>') {
                     // UUID validation
                     if (!Uuid::isValid($actualValue)) {
