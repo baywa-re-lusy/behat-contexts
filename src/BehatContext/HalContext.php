@@ -20,7 +20,7 @@ class HalContext extends AbstractApiResponseContext
             throw new \Exception(sprintf('Expected ApiProblem content type, but got %s.', $contentType[0]));
         }
 
-        $response = json_decode($this->getLastResponse()->getBody()->getContents(), true);
+        $response = $this->getLastResponseJsonDataAsArray();
 
         if (!is_null($expectedErrorMessage) && $expectedErrorMessage !== $response['detail']) {
             throw new \Exception('Expected a different error message.');
@@ -40,7 +40,7 @@ class HalContext extends AbstractApiResponseContext
             return;
         }
 
-        $errors = json_decode($this->getLastResponse()->getBody()->getContents(), true);
+        $errors = $this->getLastResponseJsonDataAsArray();
 
         // Check if the response contains validation messages
         if (!array_key_exists('validation_messages', $errors)) {
@@ -106,8 +106,7 @@ class HalContext extends AbstractApiResponseContext
      */
     public function theResponseShouldContainExactly(string $nbEntries, string $typeEntries): void
     {
-        /** @var stdClass $response */
-        $response = $this->getLastResponseJsonData();
+        $response = $this->getLastResponseJsonDataAsObject();
 
         if (count($response->_embedded->$typeEntries) !== (int)$nbEntries) {
             throw new \Exception("The entry count doesn't match: " . count($response->_embedded->$typeEntries));
@@ -124,8 +123,7 @@ class HalContext extends AbstractApiResponseContext
         TableNode $expectedResource,
         ?int $position = null
     ): void {
-        /** @var stdClass $response */
-        $response = $this->getLastResponseJsonData();
+        $response = $this->getLastResponseJsonDataAsObject();
 
         if (!$this->collectionContainsResource($response->_embedded->$collectionName, $expectedResource, $position)) {
             throw new \Exception("Resource should have been found.");
@@ -140,8 +138,7 @@ class HalContext extends AbstractApiResponseContext
         string $collectionName,
         TableNode $expectedResource
     ): void {
-        /** @var stdClass $response */
-        $response = $this->getLastResponseJsonData();
+        $response = $this->getLastResponseJsonDataAsObject();
 
         $collection = $response->_embedded->$collectionName;
 
@@ -159,8 +156,7 @@ class HalContext extends AbstractApiResponseContext
         string $collectionName,
         TableNode $expectedCollectionEntries
     ): void {
-        /** @var stdClass $response */
-        $response = $this->getLastResponseJsonData();
+        $response = $this->getLastResponseJsonDataAsObject();
 
         foreach ($expectedCollectionEntries->getRowsHash() as $expectedCollectionKey => $expectedCollectionValue) {
             $found = false;
@@ -198,8 +194,7 @@ class HalContext extends AbstractApiResponseContext
         string $subCollectionName,
         TableNode $expectedCollectionEntries
     ): void {
-        /** @var \stdClass $response */
-        $response = $this->getLastResponseJsonData();
+        $response = $this->getLastResponseJsonDataAsObject();
 
         // --- Find the main entry by ID ---
         $mainCollectionEntry = null;
@@ -266,8 +261,7 @@ class HalContext extends AbstractApiResponseContext
         string $property,
         string $value
     ): void {
-        /** @var stdClass $response */
-        $response = $this->getLastResponseJsonData();
+        $response = $this->getLastResponseJsonDataAsObject();
 
         if ($response->_embedded->$resource->$property != $value) {
             throw new \Exception('Invalid embedded resource value.');
@@ -283,8 +277,7 @@ class HalContext extends AbstractApiResponseContext
         string $collectionName,
         string $property
     ): void {
-        /** @var stdClass $response */
-        $response = $this->getLastResponseJsonData();
+        $response = $this->getLastResponseJsonDataAsObject();
 
         foreach ($response->_embedded->$collectionName as $resource) {
             if ($resource->id === $id && property_exists($resource, $property)) {
@@ -303,8 +296,7 @@ class HalContext extends AbstractApiResponseContext
         string $embeddedResourceName,
         TableNode $embeddedResource
     ): void {
-        /** @var stdClass $response */
-        $response = $this->getLastResponseJsonData();
+        $response = $this->getLastResponseJsonDataAsObject();
 
         if (!property_exists($response->_embedded, $collectionName)) {
             throw new \Exception("Response collection doesn't exist.");
