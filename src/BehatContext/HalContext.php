@@ -41,7 +41,7 @@ class HalContext extends AbstractApiResponseContext
             return;
         }
 
-        $errors = json_decode($this->getLastResponse()->getBody()->getContents(), true);
+        $errors = json_decode($this->getLastResponseJsonData(), true);
 
         // Check if the response contains validation messages
         if (!array_key_exists('validation_messages', $errors)) {
