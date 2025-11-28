@@ -91,6 +91,7 @@ abstract class AbstractApiResponseContext implements Context
     /**
      * @return ResponseInterface|null
      * @throws Exception
+     * @deprecated Should become protected in a next release because the response body can only be read once (stream).
      */
     public function getLastResponse(): ?ResponseInterface
     {
@@ -473,7 +474,7 @@ abstract class AbstractApiResponseContext implements Context
      * @return array<string, mixed>|stdClass
      * @throws Exception
      */
-    protected function getLastResponseJsonData(bool $returnAsAssociativeArray = false): array|stdClass
+    public function getLastResponseJsonData(bool $returnAsAssociativeArray = false): array|stdClass
     {
         $data = json_decode($this->lastResponseBody, $returnAsAssociativeArray);
 
