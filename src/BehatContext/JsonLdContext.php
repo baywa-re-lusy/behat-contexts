@@ -32,8 +32,7 @@ class JsonLdContext extends AbstractApiResponseContext
      */
     public function theResponseShouldContainExactlyEntries(string $nbEntries): void
     {
-        /** @var stdClass $response */
-        $response = $this->getLastResponseJsonData();
+        $response = $this->getLastResponseJsonDataAsObject();
 
         if (count($response->member) !== (int)$nbEntries) {
             throw new \Exception("The entry count doesn't match: " . count($response->member));
@@ -48,8 +47,7 @@ class JsonLdContext extends AbstractApiResponseContext
         TableNode $expectedResource,
         ?int $position = null
     ): void {
-        /** @var stdClass $response */
-        $response = $this->getLastResponseJsonData();
+        $response = $this->getLastResponseJsonDataAsObject();
 
         if (!$this->collectionContainsResource($response->member, $expectedResource, $position)) {
             throw new \Exception("Resource should have been found.");
@@ -62,8 +60,7 @@ class JsonLdContext extends AbstractApiResponseContext
      */
     public function theResponseCollectionShouldNotContainTheResource(TableNode $expectedResource): void
     {
-        /** @var stdClass $response */
-        $response = $this->getLastResponseJsonData();
+        $response = $this->getLastResponseJsonDataAsObject();
 
         if ($this->collectionContainsResource($response->member, $expectedResource)) {
             throw new \Exception("Resource shouldn't have been found.");
