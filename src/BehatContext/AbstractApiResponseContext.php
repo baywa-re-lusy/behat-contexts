@@ -234,8 +234,7 @@ abstract class AbstractApiResponseContext implements Context
      */
     public function theResponseArrayShouldContainEntries(int $number): void
     {
-        /** @var string[] $response */
-        $response = $this->getLastResponseJsonData(true);
+        $response = $this->getLastResponseJsonDataAsArray();
 
         if (!array_is_list($response)) {
             throw new Exception('Response is not an array.');
@@ -252,8 +251,7 @@ abstract class AbstractApiResponseContext implements Context
      */
     public function theResponseArrayShouldContainTheEntry(TableNode $expectedEntry): void
     {
-        /** @var array<array<string, mixed>> $response */
-        $response = $this->getLastResponseJsonData(true);
+        $response = $this->getLastResponseJsonDataAsArray();
 
         if (!array_is_list($response)) {
             throw new Exception('Response is not an array.');
@@ -312,7 +310,7 @@ abstract class AbstractApiResponseContext implements Context
     public function theResponseShouldBeAJsonObjectContaining(TableNode $expectedObject): void
     {
         /** @var string[] $response */
-        $response = $this->getLastResponseJsonData(true);
+        $response = $this->getLastResponseJsonDataAsArray();
 
         foreach ($expectedObject->getRows() as $row) {
             if (!array_key_exists($row[0], $response)) {
@@ -348,7 +346,7 @@ abstract class AbstractApiResponseContext implements Context
             }
         }
 
-        if ($this->getLastResponseJsonData(true) !== json_decode($json, true)) {
+        if ($this->getLastResponseJsonDataAsArray() !== json_decode($json, true)) {
             throw new Exception('Invalid answer.');
         }
     }
@@ -470,19 +468,46 @@ abstract class AbstractApiResponseContext implements Context
     }
 
     /**
-     * @param bool $returnAsAssociativeArray
-     * @return array<string, mixed>|stdClass
+     * @return array<string|int, mixed>
      * @throws Exception
      */
-    public function getLastResponseJsonData(bool $returnAsAssociativeArray = false): array|stdClass
+    public function getLastResponseJsonDataAsArray(): array
     {
-        $data = json_decode($this->lastResponseBody, $returnAsAssociativeArray);
+        $data = json_decode($this->lastResponseBody, true);
 
         if (JSON_ERROR_NONE !== json_last_error()) {
             throw new Exception(sprintf('Invalid json body: %s', $this->lastResponseBody));
         }
 
         return $data;
+    }
+
+    /**
+     * @return stdClass
+     * @throws Exception
+     */
+    public function getLastResponseJsonDataAsObject(): stdClass
+    {
+        $data = json_decode($this->lastResponseBody, false);
+
+        if (JSON_ERROR_NONE !== json_last_error()) {
+            throw new Exception(sprintf('Invalid json body: %s', $this->lastResponseBody));
+        }
+
+        return $data;
+    }
+
+    /**
+     * @return string
+     * @throws Exception
+     */
+    public function getLastResponseJsonDataRaw(): string
+    {
+        if (JSON_ERROR_NONE !== json_last_error()) {
+            throw new Exception(sprintf('Invalid json body: %s', $this->lastResponseBody));
+        }
+
+        return $this->lastResponseBody;
     }
 
     /**
