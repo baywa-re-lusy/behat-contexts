@@ -20,7 +20,8 @@ class HalContext extends AbstractApiResponseContext
             throw new \Exception(sprintf('Expected ApiProblem content type, but got %s.', $contentType[0]));
         }
 
-        $response = json_decode($this->getLastResponse()->getBody()->getContents(), true);
+        /** @var array $response */
+        $response = $this->getLastResponseJsonData(true);
 
         if (!is_null($expectedErrorMessage) && $expectedErrorMessage !== $response['detail']) {
             throw new \Exception('Expected a different error message.');

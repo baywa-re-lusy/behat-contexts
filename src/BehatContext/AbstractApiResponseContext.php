@@ -12,8 +12,9 @@ use stdClass;
 
 abstract class AbstractApiResponseContext implements Context
 {
-    protected ?HttpClient $httpClient = null;
+    protected ?HttpClient $httpClient          = null;
     protected ?ResponseInterface $lastResponse = null;
+    protected ?string $lastResponseBody        = null;
 
     /**
      * URL of the APIs webserver.
@@ -106,7 +107,9 @@ abstract class AbstractApiResponseContext implements Context
      */
     public function setLastResponse(?ResponseInterface $lastResponse): AbstractApiResponseContext
     {
-        $this->lastResponse = $lastResponse;
+        $this->lastResponse     = $lastResponse;
+        $this->lastResponseBody = $lastResponse->getBody()->getContents();
+
         return $this;
     }
 
@@ -472,11 +475,10 @@ abstract class AbstractApiResponseContext implements Context
      */
     protected function getLastResponseJsonData(bool $returnAsAssociativeArray = false): array|stdClass
     {
-        $responseBody = $this->getLastResponse()->getBody();
-        $data         = json_decode($responseBody, $returnAsAssociativeArray);
+        $data = json_decode($this->lastResponseBody, $returnAsAssociativeArray);
 
         if (JSON_ERROR_NONE !== json_last_error()) {
-            throw new Exception(sprintf('Invalid json body: %s', $responseBody));
+            throw new Exception(sprintf('Invalid json body: %s', $this->lastResponseBody));
         }
 
         return $data;
