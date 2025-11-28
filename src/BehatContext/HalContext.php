@@ -10,13 +10,20 @@ class HalContext extends AbstractApiResponseContext
 {
     /**
      * @Then response should be an ApiProblem
+     * @Then response should be an ApiProblem with error message :errorMessage
      */
-    public function responseShouldBeAnApiProblem(): void
+    public function responseShouldBeAnApiProblem(?string $expectedErrorMessage = null): void
     {
         $contentType = $this->getLastResponse()->getHeader('Content-Type');
 
         if ('application/problem+json' !== $contentType[0]) {
             throw new \Exception(sprintf('Expected ApiProblem content type, but got %s.', $contentType[0]));
+        }
+
+        $response = json_decode($this->getLastResponse()->getBody()->getContents(), true);
+
+        if (!is_null($expectedErrorMessage) && $expectedErrorMessage !== $response['detail']) {
+            throw new \Exception('Expected a different error message.');
         }
     }
 
