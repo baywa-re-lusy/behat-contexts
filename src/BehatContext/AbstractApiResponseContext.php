@@ -503,10 +503,6 @@ abstract class AbstractApiResponseContext implements Context
      */
     public function getLastResponseJsonDataRaw(): string
     {
-        if (JSON_ERROR_NONE !== json_last_error()) {
-            throw new Exception(sprintf('Invalid json body: %s', $this->lastResponseBody));
-        }
-
         return $this->lastResponseBody;
     }
 
