@@ -18,7 +18,6 @@ class ConsoleContext implements Context
      */
     public function iCallTheConsoleRoute(string $route): void
     {
-        $status = null;
         exec(getcwd() . '/console ' . $route, $this->lastOutput, $this->lastReturnCode);
 
         foreach ($this->lastOutput as $outputLine) {
@@ -76,6 +75,31 @@ class ConsoleContext implements Context
 
         if (!$timestamp || $timestamp->getTimestamp() < time() - 5) {
             throw new \Exception('Timestamp is invalid or too old.');
+        }
+    }
+
+    /**
+     * @Then the file :filename should contain a timestamp not older than :nbSeconds seconds
+     * @throws Exception
+     */
+    public function theFileShouldContainATimestampNotOlderThanSeconds(string $filename, int $nbSeconds): void
+    {
+        $filePath = getcwd() . DIRECTORY_SEPARATOR . $filename;
+
+        if (!file_exists($filePath)) {
+            throw new Exception('File does not exist.');
+        }
+
+        $fileContent = file_get_contents($filePath);
+
+        if (!is_string($fileContent) || !ctype_digit($fileContent)) {
+            throw new Exception('No timestamp found in file : ' . var_export($fileContent, true));
+        }
+
+        $secondsPassed = time() - (int)$fileContent;
+
+        if ($secondsPassed > $nbSeconds) {
+            throw new Exception('Timestamp is invalid or too old.');
         }
     }
 }
