@@ -18,7 +18,6 @@ class ConsoleContext implements Context
      */
     public function iCallTheConsoleRoute(string $route): void
     {
-        $status = null;
         exec(getcwd() . '/console ' . $route, $this->lastOutput, $this->lastReturnCode);
 
         foreach ($this->lastOutput as $outputLine) {
