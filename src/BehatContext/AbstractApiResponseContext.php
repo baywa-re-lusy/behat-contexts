@@ -281,9 +281,11 @@ abstract class AbstractApiResponseContext implements Context
                 $actualValue = $entry[$key];
 
                 // If the expected value is a JSON string, decode it
-                $expectedDecoded = json_decode($expectedValue, true);
-                if ($expectedDecoded !== null) {
-                    $expectedValue = $expectedDecoded;
+                if (is_string($expectedValue)) {
+                    $expectedDecoded = json_decode($expectedValue, true);
+                    if ($expectedDecoded !== null) {
+                        $expectedValue = $expectedDecoded;
+                    }
                 }
 
                 if ($expectedValue === '<UUID>') {
@@ -501,15 +503,6 @@ abstract class AbstractApiResponseContext implements Context
         }
 
         return $data;
-    }
-
-    /**
-     * @return string
-     * @throws Exception
-     */
-    public function getLastResponseJsonDataRaw(): string
-    {
-        return $this->lastResponseBody;
     }
 
     /**
