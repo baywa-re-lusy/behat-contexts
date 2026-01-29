@@ -506,6 +506,15 @@ abstract class AbstractApiResponseContext implements Context
     }
 
     /**
+     * @return string
+     * @throws Exception
+     */
+    public function getLastResponseJsonDataRaw(): string
+    {
+        return $this->lastResponseBody;
+    }
+
+    /**
      * Transform the given value into the correct type/content.
      *
      * @param string $value
