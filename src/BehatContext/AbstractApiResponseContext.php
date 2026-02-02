@@ -301,10 +301,19 @@ abstract class AbstractApiResponseContext implements Context
     {
         // UUID placeholder
         if ($expected === '<UUID>') {
-            if (!Uuid::isValid($actual)) {
+            if (!Uuid::isValid((string)$actual)) {
                 throw new \RuntimeException("Expected UUID at '{$path}'");
             }
             return;
+        }
+
+        // Normalize objects → arrays for comparison
+        if (is_object($actual)) {
+            $actual = json_decode(json_encode($actual), true);
+        }
+
+        if (is_object($expected)) {
+            $expected = json_decode(json_encode($expected), true);
         }
 
         // Scalar comparison
@@ -320,9 +329,9 @@ abstract class AbstractApiResponseContext implements Context
             return;
         }
 
-        // Array / object subset
+        // Expected is array → actual must be array
         if (!is_array($actual)) {
-            throw new \RuntimeException("Expected array at '{$path}'");
+            throw new \RuntimeException("Expected array/object at '{$path}'");
         }
 
         foreach ($expected as $key => $expectedValue) {
@@ -478,28 +487,53 @@ abstract class AbstractApiResponseContext implements Context
     protected function resourceMatch(TableNode $expectedResource, stdClass $receivedResource): bool
     {
         $expectedResource = $expectedResource->getRowsHash();
-        $resourceFound    = true;
 
         foreach ($expectedResource as $key => $val) {
-            // Check if value is a boolean or a link to a file
             if (is_string($val)) {
                 $val = $this->getOrCastValue($val);
             }
 
-            if (
-                (!property_exists($receivedResource, $key) || $val != $receivedResource->$key) &&
-                (
-                    !property_exists($receivedResource, '_embedded') ||
-                    !property_exists($receivedResource->_embedded, $key) ||
-                    $receivedResource->_embedded->$key->id != $val
-                )
-            ) {
-                $resourceFound = false;
-                break;
+            // direct property match
+            if (property_exists($receivedResource, $key)) {
+                try {
+                    $this->assertMatchesSubset(
+                        $val,
+                        $receivedResource->$key,
+                        $key
+                    );
+                    continue;
+                } catch (\RuntimeException) {
+                    // fall through to embedded check
+                }
             }
+
+            // embedded resource match (HAL-style)
+            if (
+                property_exists($receivedResource, '_embedded') &&
+                property_exists($receivedResource->_embedded, $key)
+            ) {
+                $embedded = $receivedResource->_embedded->$key;
+
+                // common HAL case: compare against embedded.id
+                if (is_object($embedded) && property_exists($embedded, 'id')) {
+                    try {
+                        $this->assertMatchesSubset(
+                            $val,
+                            $embedded->id,
+                            "_embedded.$key.id"
+                        );
+                        continue;
+                    } catch (\RuntimeException) {
+                        // fall through
+                    }
+                }
+            }
+
+            // nothing matched
+            return false;
         }
 
-        return $resourceFound;
+        return true;
     }
 
     /**
