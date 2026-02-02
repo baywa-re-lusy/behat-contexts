@@ -259,56 +259,106 @@ abstract class AbstractApiResponseContext implements Context
 
         $expectedEntry = $expectedEntry->getRowsHash();
 
-        // Normalize booleans
+        // Normalize booleans + decode JSON
         foreach ($expectedEntry as $key => &$value) {
             if (in_array($value, ['true', 'false'], true)) {
                 $value = $value === 'true';
+                continue;
+            }
+
+            if (is_string($value)) {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $value = $decoded;
+                }
             }
         }
-
-        $entryFound = false;
 
         foreach ($response as $entry) {
-            // check if all expected key/value pairs exist in this entry
-            $matches = true;
-
-            foreach ($expectedEntry as $key => $expectedValue) {
-                if (!array_key_exists($key, $entry)) {
-                    $matches = false;
-                    break;
-                }
-
-                $actualValue = $entry[$key];
-
-                // If the expected value is a JSON string, decode it
-                if (is_string($expectedValue)) {
-                    $expectedDecoded = json_decode($expectedValue, true);
-                    if ($expectedDecoded !== null) {
-                        $expectedValue = $expectedDecoded;
+            try {
+                foreach ($expectedEntry as $key => $expectedValue) {
+                    if (!array_key_exists($key, $entry)) {
+                        throw new \RuntimeException(sprintf("Missing key '%s'", $key));
                     }
+
+                    $this->assertMatchesSubset(
+                        $expectedValue,
+                        $entry[$key],
+                        $key
+                    );
                 }
 
-                if ($expectedValue === '<UUID>') {
-                    // UUID validation
-                    if (!Uuid::isValid($actualValue)) {
-                        $matches = false;
-                        break;
-                    }
-                } elseif ($actualValue != $expectedValue) {
-                    $matches = false;
-                    break;
-                }
-            }
-
-            if ($matches) {
-                $entryFound = true;
-                break;
+                return;
+            } catch (\RuntimeException $e) {
+                continue;
             }
         }
 
-        if (!$entryFound) {
-            throw new Exception("Response array doesn't contain expected entry.");
+        throw new Exception("Response array doesn't contain expected entry.");
+    }
+
+    private function assertMatchesSubset(mixed $expected, mixed $actual, string $path): void
+    {
+        // UUID placeholder
+        if ($expected === '<UUID>') {
+            if (!Uuid::isValid((string)$actual)) {
+                throw new \RuntimeException(sprintf("Expected UUID at '%s'", $path));
+            }
+            return;
         }
+
+        // Normalize objects -> arrays for comparison
+        if (is_object($actual)) {
+            $actual = $this->objectToArray($actual);
+        }
+
+        if (is_object($expected)) {
+            $expected = $this->objectToArray($expected);
+        }
+
+        // Scalar comparison
+        if (!is_array($expected)) {
+            if ($expected != $actual) {
+                throw new \RuntimeException(sprintf(
+                    "Mismatch at '%s': expected %s, got %s",
+                    $path,
+                    json_encode($expected),
+                    json_encode($actual)
+                ));
+            }
+            return;
+        }
+
+        // Expected is array -> actual must be array
+        if (!is_array($actual)) {
+            throw new \RuntimeException(sprintf("Expected array/object at '%s'", $path));
+        }
+
+        foreach ($expected as $key => $expectedValue) {
+            if (!array_key_exists($key, $actual)) {
+                throw new \RuntimeException(sprintf("Missing key '%s.%s'", $path, $key));
+            }
+
+            $this->assertMatchesSubset(
+                $expectedValue,
+                $actual[$key],
+                $path . $key
+            );
+        }
+    }
+
+    /**
+     * @param object $object
+     * @return array<string, mixed>
+     */
+    private function objectToArray(object $object): array
+    {
+        if ($object instanceof \JsonSerializable) {
+            return $object->jsonSerialize();
+        }
+
+        // stdClass or generic object
+        return get_object_vars($object);
     }
 
     /**
@@ -451,28 +501,53 @@ abstract class AbstractApiResponseContext implements Context
     protected function resourceMatch(TableNode $expectedResource, stdClass $receivedResource): bool
     {
         $expectedResource = $expectedResource->getRowsHash();
-        $resourceFound    = true;
 
         foreach ($expectedResource as $key => $val) {
-            // Check if value is a boolean or a link to a file
             if (is_string($val)) {
                 $val = $this->getOrCastValue($val);
             }
 
-            if (
-                (!property_exists($receivedResource, $key) || $val != $receivedResource->$key) &&
-                (
-                    !property_exists($receivedResource, '_embedded') ||
-                    !property_exists($receivedResource->_embedded, $key) ||
-                    $receivedResource->_embedded->$key->id != $val
-                )
-            ) {
-                $resourceFound = false;
-                break;
+            // direct property match
+            if (property_exists($receivedResource, $key)) {
+                try {
+                    $this->assertMatchesSubset(
+                        $val,
+                        $receivedResource->$key,
+                        $key
+                    );
+                    continue;
+                } catch (\RuntimeException) {
+                    // fall through to embedded check
+                }
             }
+
+            // embedded resource match (HAL-style)
+            if (
+                property_exists($receivedResource, '_embedded') &&
+                property_exists($receivedResource->_embedded, $key)
+            ) {
+                $embedded = $receivedResource->_embedded->$key;
+
+                // common HAL case: compare against embedded.id
+                if (is_object($embedded) && property_exists($embedded, 'id')) {
+                    try {
+                        $this->assertMatchesSubset(
+                            $val,
+                            $embedded->id,
+                            "_embedded.$key.id"
+                        );
+                        continue;
+                    } catch (\RuntimeException) {
+                        // fall through
+                    }
+                }
+            }
+
+            // nothing matched
+            return false;
         }
 
-        return $resourceFound;
+        return true;
     }
 
     /**
