@@ -288,10 +288,8 @@ abstract class AbstractApiResponseContext implements Context
                     );
                 }
 
-                // If we got here → full expected entry matched
                 return;
             } catch (\RuntimeException $e) {
-                // this entry didn't match → try next one
                 continue;
             }
         }
@@ -331,20 +329,20 @@ abstract class AbstractApiResponseContext implements Context
             return;
         }
 
-        // Expected is array → actual must be array
+        // Expected is array -> actual must be array
         if (!is_array($actual)) {
-            throw new \RuntimeException("Expected array/object at '{$path}'");
+            throw new \RuntimeException(sprintf("Expected array/object at '%s'", $path));
         }
 
         foreach ($expected as $key => $expectedValue) {
             if (!array_key_exists($key, $actual)) {
-                throw new \RuntimeException("Missing key '{$path}.{$key}'");
+                throw new \RuntimeException(sprintf("Missing key '%s.%s'", $path, $key));
             }
 
             $this->assertMatchesSubset(
                 $expectedValue,
                 $actual[$key],
-                "{$path}.{$key}"
+                $path . $key
             );
         }
     }
