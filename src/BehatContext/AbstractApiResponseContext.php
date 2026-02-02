@@ -278,7 +278,7 @@ abstract class AbstractApiResponseContext implements Context
             try {
                 foreach ($expectedEntry as $key => $expectedValue) {
                     if (!array_key_exists($key, $entry)) {
-                        throw new \RuntimeException("Missing key '{$key}'");
+                        throw new \RuntimeException(sprintf("Missing key '%s'", $key));
                     }
 
                     $this->assertMatchesSubset(
@@ -302,12 +302,12 @@ abstract class AbstractApiResponseContext implements Context
         // UUID placeholder
         if ($expected === '<UUID>') {
             if (!Uuid::isValid((string)$actual)) {
-                throw new \RuntimeException("Expected UUID at '{$path}'");
+                throw new \RuntimeException(sprintf("Expected UUID at '%s'", $path));
             }
             return;
         }
 
-        // Normalize objects → arrays for comparison
+        // Normalize objects -> arrays for comparison
         if (is_object($actual)) {
             $actual = $this->objectToArray($actual);
         }
@@ -319,12 +319,12 @@ abstract class AbstractApiResponseContext implements Context
         // Scalar comparison
         if (!is_array($expected)) {
             if ($expected != $actual) {
-                throw new \RuntimeException(
-                    "Mismatch at '{$path}': expected " .
-                    json_encode($expected) .
-                    ", got " .
+                throw new \RuntimeException(sprintf(
+                    "Mismatch at '%s': expected %s, got %s",
+                    $path,
+                    json_encode($expected),
                     json_encode($actual)
-                );
+                ));
             }
             return;
         }
