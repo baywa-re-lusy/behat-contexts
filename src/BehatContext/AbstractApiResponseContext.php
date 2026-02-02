@@ -259,55 +259,82 @@ abstract class AbstractApiResponseContext implements Context
 
         $expectedEntry = $expectedEntry->getRowsHash();
 
-        // Normalize booleans
+        // Normalize booleans + decode JSON
         foreach ($expectedEntry as $key => &$value) {
             if (in_array($value, ['true', 'false'], true)) {
                 $value = $value === 'true';
+            } else {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $value = $decoded;
+                }
             }
         }
-
-        $entryFound = false;
 
         foreach ($response as $entry) {
-            // check if all expected key/value pairs exist in this entry
-            $matches = true;
-
-            foreach ($expectedEntry as $key => $expectedValue) {
-                if (!array_key_exists($key, $entry)) {
-                    $matches = false;
-                    break;
-                }
-
-                $actualValue = $entry[$key];
-
-                // If the expected value is a JSON string, decode it
-                if (is_string($expectedValue)) {
-                    $expectedDecoded = json_decode($expectedValue, true);
-                    if ($expectedDecoded !== null) {
-                        $expectedValue = $expectedDecoded;
+            try {
+                foreach ($expectedEntry as $key => $expectedValue) {
+                    if (!array_key_exists($key, $entry)) {
+                        throw new \RuntimeException("Missing key '{$key}'");
                     }
+
+                    $this->assertMatchesSubset(
+                        $expectedValue,
+                        $entry[$key],
+                        $key
+                    );
                 }
 
-                if ($expectedValue === '<UUID>') {
-                    // UUID validation
-                    if (!Uuid::isValid($actualValue)) {
-                        $matches = false;
-                        break;
-                    }
-                } elseif ($actualValue != $expectedValue) {
-                    $matches = false;
-                    break;
-                }
-            }
+                // If we got here → full expected entry matched
+                return;
 
-            if ($matches) {
-                $entryFound = true;
-                break;
+            } catch (\RuntimeException $e) {
+                // this entry didn't match → try next one
+                continue;
             }
         }
 
-        if (!$entryFound) {
-            throw new Exception("Response array doesn't contain expected entry.");
+        throw new Exception("Response array doesn't contain expected entry.");
+    }
+
+    private function assertMatchesSubset(mixed $expected, mixed $actual, string $path): void
+    {
+        // UUID placeholder
+        if ($expected === '<UUID>') {
+            if (!Uuid::isValid($actual)) {
+                throw new \RuntimeException("Expected UUID at '{$path}'");
+            }
+            return;
+        }
+
+        // Scalar comparison
+        if (!is_array($expected)) {
+            if ($expected != $actual) {
+                throw new \RuntimeException(
+                    "Mismatch at '{$path}': expected " .
+                    json_encode($expected) .
+                    ", got " .
+                    json_encode($actual)
+                );
+            }
+            return;
+        }
+
+        // Array / object subset
+        if (!is_array($actual)) {
+            throw new \RuntimeException("Expected array at '{$path}'");
+        }
+
+        foreach ($expected as $key => $expectedValue) {
+            if (!array_key_exists($key, $actual)) {
+                throw new \RuntimeException("Missing key '{$path}.{$key}'");
+            }
+
+            $this->assertMatchesSubset(
+                $expectedValue,
+                $actual[$key],
+                "{$path}.{$key}"
+            );
         }
     }
 
