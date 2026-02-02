@@ -263,7 +263,10 @@ abstract class AbstractApiResponseContext implements Context
         foreach ($expectedEntry as $key => &$value) {
             if (in_array($value, ['true', 'false'], true)) {
                 $value = $value === 'true';
-            } else {
+                continue;
+            }
+
+            if (is_string($value)) {
                 $decoded = json_decode($value, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
                     $value = $decoded;
