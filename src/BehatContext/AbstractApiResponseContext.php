@@ -287,7 +287,6 @@ abstract class AbstractApiResponseContext implements Context
 
                 // If we got here → full expected entry matched
                 return;
-
             } catch (\RuntimeException $e) {
                 // this entry didn't match → try next one
                 continue;
@@ -309,11 +308,11 @@ abstract class AbstractApiResponseContext implements Context
 
         // Normalize objects → arrays for comparison
         if (is_object($actual)) {
-            $actual = json_decode(json_encode($actual), true);
+            $actual = $this->objectToArray($actual);
         }
 
         if (is_object($expected)) {
-            $expected = json_decode(json_encode($expected), true);
+            $expected = $this->objectToArray($expected);
         }
 
         // Scalar comparison
@@ -345,6 +344,20 @@ abstract class AbstractApiResponseContext implements Context
                 "{$path}.{$key}"
             );
         }
+    }
+
+    /**
+     * @param object $object
+     * @return array<string, mixed>
+     */
+    private function objectToArray(object $object): array
+    {
+        if ($object instanceof \JsonSerializable) {
+            return $object->jsonSerialize();
+        }
+
+        // stdClass or generic object
+        return get_object_vars($object);
     }
 
     /**
