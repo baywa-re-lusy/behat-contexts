@@ -7,6 +7,7 @@ use BayWaReLusy\BehatContext\SqsContext\QueueUrl;
 use BayWaReLusy\QueueTools\QueueService;
 use Behat\Behat\Context\Context;
 use Behat\Gherkin\Node\TableNode;
+use Behat\Step\Then;
 use Exception;
 use Ramsey\Uuid\Uuid;
 
@@ -383,5 +384,30 @@ class SqsContext implements Context
         }
 
         throw new Exception(sprintf("No Queue found with name '%s'", $queueName));
+    }
+
+    #[Then('the following messages should have been queued in queue :queueName:')]
+    public function theFollowingMessagesShouldHaveBeenQueuedInQueue(string $queueName, TableNode $table): void
+    {
+        $this->receiveMessagesFromQueue($queueName);
+        $expectedMessages = $table->getColumnsHash();
+
+        foreach ($expectedMessages as $expectedMessage) {
+            foreach ($this->queueMessages[$queueName] as $messageContent) {
+                $messageMatch = true;
+                foreach ($expectedMessage as $expectedMessageKey => $expectedMessageValue) {
+                    if ($messageContent[$expectedMessageKey] != $expectedMessageValue) {
+                        $messageMatch = false;
+                        break;
+                    }
+                }
+
+                if ($messageMatch) {
+                    continue 2;
+                }
+            }
+
+            throw new \Exception(sprintf("Message should have been found in queue '%s'.", $queueName));
+        }
     }
 }
