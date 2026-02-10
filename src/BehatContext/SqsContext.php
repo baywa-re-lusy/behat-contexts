@@ -164,9 +164,17 @@ class SqsContext implements Context
      */
     public function aMessageInQueue(string $queueName, TableNode $message): void
     {
+        $data = $message->getRowsHash();
+
+        foreach ($data as $key => &$value) {
+            if (str_starts_with($value, 'json://')) {
+                $value = json_decode(substr($value, 7), true);
+            }
+        }
+
         $this->sendMessageIntoQueue(
             $this->getQueueUrl($queueName),
-            (string)json_encode($message->getRowsHash())
+            (string)json_encode($data)
         );
     }
 
@@ -396,6 +404,11 @@ class SqsContext implements Context
             foreach ($this->queueMessages[$queueName] as $messageContent) {
                 $messageMatch = true;
                 foreach ($expectedMessage as $expectedMessageKey => $expectedMessageValue) {
+                    $jsonDecoded = json_decode($expectedMessageValue, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $expectedMessageValue = $jsonDecoded;
+                    }
+
                     if ($messageContent[$expectedMessageKey] != $expectedMessageValue) {
                         $messageMatch = false;
                         break;
