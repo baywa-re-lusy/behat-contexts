@@ -410,6 +410,14 @@ class SqsContext implements Context
                         $expectedMessageValue = $jsonDecoded;
                     }
 
+                    if (is_array($messageContent[$expectedMessageKey])) {
+                        $messageContent[$expectedMessageKey] = sort($messageContent[$expectedMessageKey]);
+                    }
+
+                    if (is_array($jsonDecoded)) {
+                        $jsonDecoded = sort($jsonDecoded);
+                    }
+
                     if ($messageContent[$expectedMessageKey] != $expectedMessageValue) {
                         $messageMatch = false;
                         break;
