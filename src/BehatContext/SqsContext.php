@@ -164,11 +164,12 @@ class SqsContext implements Context
      */
     public function aMessageInQueue(string $queueName, TableNode $message): void
     {
+        /** @var array<string, string> $data */
         $data = $message->getRowsHash();
 
         foreach ($data as $key => &$value) {
-            if (str_starts_with((string)$value, 'json://')) {
-                $value = json_decode(substr((string)$value, 7), true);
+            if (str_starts_with($value, 'json://')) {
+                $value = json_decode(substr($value, 7), true);
             }
         }
 
