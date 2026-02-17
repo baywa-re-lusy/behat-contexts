@@ -21,7 +21,7 @@ class SqsContext implements Context
     protected ?string $awsSecret   = null;
     protected ?string $sqsEndpoint = null;
 
-    /** @var array<string, array<string, array<string, string>>> Queue messages */
+    /** @var array<string, array<string, array<string, mixed>>> Queue messages */
     protected array $queueMessages = [];
 
     /** @var QueueService */
@@ -408,6 +408,14 @@ class SqsContext implements Context
                     $jsonDecoded = json_decode($expectedMessageValue, true);
                     if (json_last_error() === JSON_ERROR_NONE) {
                         $expectedMessageValue = $jsonDecoded;
+                    }
+
+                    if (is_array($messageContent[$expectedMessageKey])) {
+                        sort($messageContent[$expectedMessageKey]);
+                    }
+
+                    if (is_array($expectedMessageValue)) {
+                        sort($expectedMessageValue);
                     }
 
                     if ($messageContent[$expectedMessageKey] != $expectedMessageValue) {
