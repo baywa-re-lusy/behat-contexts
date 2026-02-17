@@ -7,6 +7,7 @@ use BayWaReLusy\BehatContext\SqsContext\QueueUrl;
 use BayWaReLusy\QueueTools\QueueService;
 use Behat\Behat\Context\Context;
 use Behat\Gherkin\Node\TableNode;
+use Behat\Step\Then;
 use Exception;
 use Ramsey\Uuid\Uuid;
 
@@ -15,9 +16,10 @@ class SqsContext implements Context
     /** @var QueueUrl[]  */
     protected array $queueUrls = [];
 
-    protected ?string $awsRegion = null;
-    protected ?string $awsKey = null;
-    protected ?string $awsSecret = null;
+    protected ?string $awsRegion   = null;
+    protected ?string $awsKey      = null;
+    protected ?string $awsSecret   = null;
+    protected ?string $sqsEndpoint = null;
 
     /** @var array<string, array<string, array<string, string>>> Queue messages */
     protected array $queueMessages = [];
@@ -79,6 +81,17 @@ class SqsContext implements Context
         return $this;
     }
 
+    public function getSqsEndpoint(): ?string
+    {
+        return $this->sqsEndpoint;
+    }
+
+    public function setSqsEndpoint(?string $sqsEndpoint): SqsContext
+    {
+        $this->sqsEndpoint = $sqsEndpoint;
+        return $this;
+    }
+
     /**
      * @return string
      */
@@ -121,16 +134,24 @@ class SqsContext implements Context
             throw new \Exception('AWS Credentials not set.');
         }
 
+        $sqsOptions =
+            [
+                'version'     => '2012-11-05',
+                'region'      => $this->awsRegion,
+                'credentials' =>
+                    [
+                        'key'    => $this->awsKey,
+                        'secret' => $this->awsSecret,
+                    ]
+            ];
+
+        // Endpoint is only mandatory for non-AWS SQS-providers like ElasticMQ
+        if (!is_null($this->getSqsEndpoint())) {
+            $sqsOptions['endpoint'] = $this->getSqsEndpoint();
+        }
+
         // Create SQS client
-        $sqsClient = new SqsClient([
-            'version'     => '2012-11-05',
-            'region'      => $this->awsRegion,
-            'credentials' =>
-                [
-                    'key'    => $this->awsKey,
-                    'secret' => $this->awsSecret,
-                ]
-        ]);
+        $sqsClient = new SqsClient($sqsOptions);
 
         // Clear all queues
         foreach ($this->queueUrls as $queueUrl) {
@@ -143,13 +164,18 @@ class SqsContext implements Context
      */
     public function aMessageInQueue(string $queueName, TableNode $message): void
     {
-        $queueUrl = $this->getQueueUrl($queueName);
+        /** @var array<string, string> $data */
+        $data = $message->getRowsHash();
 
-        $this->getQueueService()->sendMessage(
-            $queueUrl->getQueueUrl(),
-            (string)json_encode($message->getRowsHash()),
-            Uuid::uuid4()->toString(),
-            Uuid::uuid4()->toString()
+        foreach ($data as $key => &$value) {
+            if (str_starts_with($value, 'json://')) {
+                $value = json_decode(substr($value, 7), true);
+            }
+        }
+
+        $this->sendMessageIntoQueue(
+            $this->getQueueUrl($queueName),
+            (string)json_encode($data)
         );
     }
 
@@ -158,8 +184,6 @@ class SqsContext implements Context
      */
     public function aMessageInQueueWithJsonContent(string $queueName, string $jsonOrFileName): void
     {
-        $queueUrl = $this->getQueueUrl($queueName);
-
         if (str_starts_with($jsonOrFileName, 'file://')) {
             $fileName = $this->getJsonFilesPath() . DIRECTORY_SEPARATOR . str_replace('file://', '', $jsonOrFileName);
             $jsonOrFileName = file_get_contents($fileName);
@@ -169,15 +193,26 @@ class SqsContext implements Context
             }
         }
 
+        $this->sendMessageIntoQueue($this->getQueueUrl($queueName), $jsonOrFileName);
+    }
+
+    protected function sendMessageIntoQueue(QueueUrl $queueUrl, string $jsonMessageBody): void
+    {
+        $isFifoQueue = str_ends_with($queueUrl->getQueueUrl(), '.fifo');
+
         $this->getQueueService()->sendMessage(
             $queueUrl->getQueueUrl(),
-            $jsonOrFileName,
-            Uuid::uuid4()->toString(),
-            Uuid::uuid4()->toString()
+            $jsonMessageBody,
+            $isFifoQueue ? Uuid::uuid4()->toString() : null,
+            $isFifoQueue ? Uuid::uuid4()->toString() : null
         );
     }
 
     /**
+     * Checks if a message with the given content has been queued.
+     * You can read a dynamic value from an environment variable using {env://ENV_VAR_NAME}.
+     * This can be useful in case there is a dynamically generated UUID.
+     *
      * @Then a message with the following content should have been queued in :queueName:
      * @throws Exception
      */
@@ -198,6 +233,10 @@ class SqsContext implements Context
                     $row[1] = false;
                 } elseif ($row[1] === 'true') {
                     $row[1] = true;
+                } elseif ($row[1] === 'null') {
+                    $row[1] = null;
+                } elseif (preg_match('/^\{env:\/\/([A-Za-z0-9_]+)\}$/', $row[1], $matches)) {
+                    $row[1] = getenv($matches[1]);
                 }
 
                 if ($messageContent[$row[0]] != $row[1]) {
@@ -213,6 +252,7 @@ class SqsContext implements Context
 
     /**
      * @Then a message with exactly the following content should have been queued in :queueName:
+     * @Then a message with exactly the following content should be in the queue :queueName:
      * @throws Exception
      */
     public function aMessageWithExactlyTheFollowingContentShouldHaveBeenQueuedIn(
@@ -225,10 +265,18 @@ class SqsContext implements Context
     /**
      * @Then a message with the following content shouldn't have been queued in :queueName:
      * @Then a message with the following content should no longer be in queue :queueName:
+     * @Then a message with the following content should no longer be in queue :queueName after :seconds seconds:
      * @throws Exception
      */
-    public function aMessageWithTheFollowingContentShouldntHaveBeenQueuedIn(string $queueName, TableNode $table): void
-    {
+    public function aMessageWithTheFollowingContentShouldntHaveBeenQueuedIn(
+        string $queueName,
+        TableNode $table,
+        ?int $seconds = null
+    ): void {
+        if (!is_null($seconds)) {
+            sleep($seconds);
+        }
+
         $this->receiveMessagesFromQueue($queueName);
 
         foreach ($this->queueMessages[$queueName] as $messageContent) {
@@ -244,6 +292,7 @@ class SqsContext implements Context
 
     /**
      * @Then a message with exactly the following JSON path content should have been queued in :queueName:
+     * @Then a message with exactly the following JSON path content should be in queue :queueName:
      */
     public function aMessageWithExactlyTheFollowingJSONPathContentShouldHaveBeenQueuedIn(
         string $queueName,
@@ -265,6 +314,49 @@ class SqsContext implements Context
 
         if (!$validMessage) {
             throw new \Exception(sprintf("Message should not have been found in queue '%s'.", $queueName));
+        }
+    }
+
+    /**
+     * @Then a message with content :content should have been queued in :queueName
+     * @Then a message with content :content should be in queue :queueName
+     * @Then a message with content :content should be in queue :queueName after :waitForSeconds seconds
+     */
+    public function aMessageWithContentShouldHaveBeenQueuedIn(
+        string $content,
+        string $queueName,
+        ?int $waitForSeconds = null
+    ): void {
+        // Wait for a potential Invisibility Timeout to finish
+        if (!is_null($waitForSeconds)) {
+            sleep($waitForSeconds);
+        }
+
+        $this->receiveMessagesFromQueue($queueName);
+
+        if (str_starts_with($content, 'file://')) {
+            $fileName = $this->getJsonFilesPath() . DIRECTORY_SEPARATOR . str_replace('file://', '', $content);
+            $content = file_get_contents($fileName);
+
+            if (!$content) {
+                throw new Exception(sprintf("File %s not found.", $fileName));
+            }
+
+            if (str_ends_with($fileName, '.json')) {
+                $content = json_decode($content, true);
+            }
+        }
+
+        $messageFound = false;
+        foreach ($this->queueMessages[$queueName] as $messageContent) {
+            if ($content === $messageContent) {
+                $messageFound = true;
+                break;
+            }
+        }
+
+        if (!$messageFound) {
+            throw new \Exception(sprintf("Message should have been found in queue '%s'.", $queueName));
         }
     }
 
@@ -301,5 +393,43 @@ class SqsContext implements Context
         }
 
         throw new Exception(sprintf("No Queue found with name '%s'", $queueName));
+    }
+
+    #[Then('the following messages should have been queued in queue :queueName:')]
+    public function theFollowingMessagesShouldHaveBeenQueuedInQueue(string $queueName, TableNode $table): void
+    {
+        $this->receiveMessagesFromQueue($queueName);
+        $expectedMessages = $table->getColumnsHash();
+
+        foreach ($expectedMessages as $expectedMessage) {
+            foreach ($this->queueMessages[$queueName] as $messageContent) {
+                $messageMatch = true;
+                foreach ($expectedMessage as $expectedMessageKey => $expectedMessageValue) {
+                    $jsonDecoded = json_decode($expectedMessageValue, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $expectedMessageValue = $jsonDecoded;
+                    }
+
+                    if (is_array($messageContent[$expectedMessageKey])) {
+                        $messageContent[$expectedMessageKey] = sort($messageContent[$expectedMessageKey]);
+                    }
+
+                    if (is_array($jsonDecoded)) {
+                        $jsonDecoded = sort($jsonDecoded);
+                    }
+
+                    if ($messageContent[$expectedMessageKey] != $expectedMessageValue) {
+                        $messageMatch = false;
+                        break;
+                    }
+                }
+
+                if ($messageMatch) {
+                    continue 2;
+                }
+            }
+
+            throw new \Exception(sprintf("Message should have been found in queue '%s'.", $queueName));
+        }
     }
 }
