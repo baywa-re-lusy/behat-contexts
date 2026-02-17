@@ -8,6 +8,16 @@ use Exception;
 class ConsoleContext implements Context
 {
     protected ?int $lastReturnCode = null;
+    protected string $consolePath = '/console';
+
+    /**
+     * @param string $consolePath
+     * @return void
+     */
+    public function setConsolePath(string $consolePath): void
+    {
+        $this->consolePath = $consolePath;
+    }
 
     /** @var string[]|null */
     protected ?array $lastOutput = [];
@@ -18,7 +28,7 @@ class ConsoleContext implements Context
      */
     public function iCallTheConsoleRoute(string $route): void
     {
-        exec(getcwd() . '/console ' . $route, $this->lastOutput, $this->lastReturnCode);
+        exec(getcwd() . $this->consolePath . ' ' . $route, $this->lastOutput, $this->lastReturnCode);
 
         foreach ($this->lastOutput as $outputLine) {
             echo $outputLine . PHP_EOL;
