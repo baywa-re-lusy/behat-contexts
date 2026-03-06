@@ -337,4 +337,21 @@ class HalContext extends AbstractApiResponseContext
 
         $this->sendRequestWithJsonBody($method, $url, $headers, $body);
     }
+
+    /**
+     * @Then response should contain the following entries:
+     */
+    public function responseShouldContainTheFollowingEntry(TableNode $entries): void
+    {
+        $entries  = $entries->getRowsHash();
+        $response = $response = $this->getLastResponseJsonDataAsArray();
+
+        foreach ($entries as $path => $value) {
+            $searchResult = (string)\JmesPath\Env::search($path, $response);
+
+            if ($searchResult !== $value) {
+                throw new \Exception(sprintf("Entry '%s' not found or didn't match value '%s'.", $path, $value));
+            }
+        }
+    }
 }
