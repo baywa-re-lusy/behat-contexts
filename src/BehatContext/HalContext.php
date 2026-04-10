@@ -350,6 +350,9 @@ class HalContext extends AbstractApiResponseContext
             $searchResult = (string)\JmesPath\Env::search($path, $response);
 
             if ($searchResult !== $value) {
+                if (is_array($value)) {
+                    $value = json_encode($value);
+                }
                 throw new \Exception(sprintf("Entry '%s' not found or didn't match value '%s'.", $path, $value));
             }
         }
