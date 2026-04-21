@@ -75,7 +75,7 @@ class JsonLdContext extends AbstractApiResponseContext
         $headers =
             [
                 'Accept'       => 'application/ld+json',
-                'Content-Type' => 'application/json',
+                'Content-Type' => 'application/ld+json',
             ];
 
         $this->sendRequestWithJsonBody($method, $url, $headers, $body);
