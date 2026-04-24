@@ -498,7 +498,8 @@ abstract class AbstractApiResponseContext implements Context
         return $url;
     }
 
-    protected abstract function resourceMatch(TableNode $expectedResource, stdClass $receivedResource): bool;
+
+    abstract protected function resourceMatch(TableNode $expectedResource, stdClass $receivedResource): bool;
 
     /**
      * @return array<string|int, mixed>
