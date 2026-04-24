@@ -80,4 +80,59 @@ class JsonLdContext extends AbstractApiResponseContext
 
         $this->sendRequestWithJsonBody($method, $url, $headers, $body);
     }
+
+    protected function resourceMatch(TableNode $expectedResource, stdClass $receivedResource): bool
+    {
+        $expectedResource = $expectedResource->getRowsHash();
+
+        foreach ($expectedResource as $key => $val) {
+            if (is_string($val)) {
+                $val = $this->getOrCastValue($val);
+            }
+
+            $searchResult = (string)\JmesPath\Env::search($key, $receivedResource);
+            error_log($searchResult);
+            if ($searchResult !== $val) {
+                if (is_array($val)) {
+                    $value = json_encode($val);
+                }
+                throw new \Exception(sprintf("Entry '%s' not found or didn't match value '%s'.", $key, $value));
+            }
+            return true;
+            // direct property match
+            if (property_exists($receivedResource, $key)) {
+                try {
+                    $this->assertMatchesSubset(
+                        $val,
+                        $receivedResource->$key,
+                        $key
+                    );
+                    continue;
+                } catch (\RuntimeException) {
+                    // fall through to embedded check
+                }
+            }
+            if (property_exists($receivedResource, $key)) {
+                //(JSON LD style)
+                $resource = $receivedResource->$key;
+                if (is_object($resource) && property_exists($resource, 'id')) {
+                    try {
+                        $this->assertMatchesSubset(
+                            $val,
+                            $resource->id,
+                            "$key.id"
+                        );
+                        continue;
+                    } catch (\RuntimeException) {
+                        // fall through
+                    }
+                }
+            }
+
+            // nothing matched
+            return false;
+        }
+
+        return true;
+    }
 }

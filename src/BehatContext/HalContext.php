@@ -344,7 +344,7 @@ class HalContext extends AbstractApiResponseContext
     public function responseShouldContainTheFollowingEntry(TableNode $entries): void
     {
         $entries  = $entries->getRowsHash();
-        $response = $response = $this->getLastResponseJsonDataAsArray();
+        $response = $this->getLastResponseJsonDataAsArray();
 
         foreach ($entries as $path => $value) {
             $searchResult = (string)\JmesPath\Env::search($path, $response);
@@ -356,5 +356,56 @@ class HalContext extends AbstractApiResponseContext
                 throw new \Exception(sprintf("Entry '%s' not found or didn't match value '%s'.", $path, $value));
             }
         }
+    }
+
+    protected function resourceMatch(TableNode $expectedResource, stdClass $receivedResource): bool
+    {
+        $expectedResource = $expectedResource->getRowsHash();
+
+        foreach ($expectedResource as $key => $val) {
+            if (is_string($val)) {
+                $val = $this->getOrCastValue($val);
+            }
+
+            // direct property match
+            if (property_exists($receivedResource, $key)) {
+                try {
+                    $this->assertMatchesSubset(
+                        $val,
+                        $receivedResource->$key,
+                        $key
+                    );
+                    continue;
+                } catch (\RuntimeException) {
+                    // fall through to embedded check
+                }
+            }
+            // embedded resource match (HAL-style)
+            if (
+                property_exists($receivedResource, '_embedded') &&
+                property_exists($receivedResource->_embedded, $key)
+            ) {
+                $embedded = $receivedResource->_embedded->$key;
+
+                // common HAL case: compare against embedded.id
+                if (is_object($embedded) && property_exists($embedded, 'id')) {
+                    try {
+                        $this->assertMatchesSubset(
+                            $val,
+                            $embedded->id,
+                            "_embedded.$key.id"
+                        );
+                        continue;
+                    } catch (\RuntimeException) {
+                        // fall through
+                    }
+                }
+            }
+
+            // nothing matched
+            return false;
+        }
+
+        return true;
     }
 }
