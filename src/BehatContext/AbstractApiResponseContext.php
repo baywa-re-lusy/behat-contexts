@@ -297,7 +297,7 @@ abstract class AbstractApiResponseContext implements Context
         throw new Exception("Response array doesn't contain expected entry.");
     }
 
-    private function assertMatchesSubset(mixed $expected, mixed $actual, string $path): void
+    protected function assertMatchesSubset(mixed $expected, mixed $actual, string $path): void
     {
         // UUID placeholder
         if ($expected === '<UUID>') {
@@ -498,57 +498,8 @@ abstract class AbstractApiResponseContext implements Context
         return $url;
     }
 
-    protected function resourceMatch(TableNode $expectedResource, stdClass $receivedResource): bool
-    {
-        $expectedResource = $expectedResource->getRowsHash();
 
-        foreach ($expectedResource as $key => $val) {
-            if (is_string($val)) {
-                $val = $this->getOrCastValue($val);
-            }
-
-            // direct property match
-            if (property_exists($receivedResource, $key)) {
-                try {
-                    $this->assertMatchesSubset(
-                        $val,
-                        $receivedResource->$key,
-                        $key
-                    );
-                    continue;
-                } catch (\RuntimeException) {
-                    // fall through to embedded check
-                }
-            }
-
-            // embedded resource match (HAL-style)
-            if (
-                property_exists($receivedResource, '_embedded') &&
-                property_exists($receivedResource->_embedded, $key)
-            ) {
-                $embedded = $receivedResource->_embedded->$key;
-
-                // common HAL case: compare against embedded.id
-                if (is_object($embedded) && property_exists($embedded, 'id')) {
-                    try {
-                        $this->assertMatchesSubset(
-                            $val,
-                            $embedded->id,
-                            "_embedded.$key.id"
-                        );
-                        continue;
-                    } catch (\RuntimeException) {
-                        // fall through
-                    }
-                }
-            }
-
-            // nothing matched
-            return false;
-        }
-
-        return true;
-    }
+    abstract protected function resourceMatch(TableNode $expectedResource, stdClass $receivedResource): bool;
 
     /**
      * @return array<string|int, mixed>

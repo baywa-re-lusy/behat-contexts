@@ -80,4 +80,24 @@ class JsonLdContext extends AbstractApiResponseContext
 
         $this->sendRequestWithJsonBody($method, $url, $headers, $body);
     }
+
+    protected function resourceMatch(TableNode $expectedResource, stdClass $receivedResource): bool
+    {
+        $expectedResource = $expectedResource->getRowsHash();
+
+        foreach ($expectedResource as $key => $val) {
+            if (is_string($val)) {
+                $val = $this->getOrCastValue($val);
+            }
+            $searchResult = (string) \JmesPath\Env::search($key, $receivedResource);
+            if ($searchResult !== $val) {
+                if (is_array($val)) {
+                    $val = json_encode($val);
+                }
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
