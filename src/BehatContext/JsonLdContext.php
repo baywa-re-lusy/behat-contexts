@@ -89,11 +89,10 @@ class JsonLdContext extends AbstractApiResponseContext
             if (is_string($val)) {
                 $val = $this->getOrCastValue($val);
             }
+
             $searchResult = \JmesPath\Env::search($key, $receivedResource);
+
             if ($searchResult !== $val) {
-                if (is_array($val)) {
-                    $val = json_encode($val);
-                }
                 return false;
             }
         }
