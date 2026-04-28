@@ -554,6 +554,8 @@ abstract class AbstractApiResponseContext implements Context
             $value = false;
         } elseif ($value === 'null') {
             $value = null;
+        } elseif (is_numeric($value)) {
+            $value = str_contains($value, '.') ? (float)$value : (int)$value;
         } elseif (str_starts_with($value, 'file://')) {
             $value = file_get_contents($this->getJsonFilesPath() . DIRECTORY_SEPARATOR . substr($value, 7));
         }

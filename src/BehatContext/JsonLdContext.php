@@ -39,13 +39,6 @@ class JsonLdContext extends AbstractApiResponseContext
         }
     }
 
-    #[Transform('rowtable')]
-    public function castResponseValues(TableNode $expectedResource): TableNode
-    {
-        var_dump('testxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
-        return $expectedResource;
-    }
-
     /**
      * @Then the response collection should contain the resource:
      * @Then the response collection should contain the resource on position :position:
