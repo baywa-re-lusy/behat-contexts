@@ -2,7 +2,7 @@
 
 namespace BayWaReLusy\BehatContext;
 
-use GuzzleHttp\Exception\GuzzleException;
+use Behat\Transformation\Transform;
 use Behat\Gherkin\Node\TableNode;
 use Exception;
 use stdClass;
@@ -37,6 +37,13 @@ class JsonLdContext extends AbstractApiResponseContext
         if (count($response->member) !== (int)$nbEntries) {
             throw new \Exception("The entry count doesn't match: " . count($response->member));
         }
+    }
+
+    #[Transform('rowtable')]
+    public function castResponseValues(TableNode $expectedResource): TableNode
+    {
+        var_dump('testxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+        return $expectedResource;
     }
 
     /**
