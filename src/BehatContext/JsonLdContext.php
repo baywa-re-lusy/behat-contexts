@@ -2,7 +2,6 @@
 
 namespace BayWaReLusy\BehatContext;
 
-use Behat\Transformation\Transform;
 use Behat\Gherkin\Node\TableNode;
 use Exception;
 use stdClass;

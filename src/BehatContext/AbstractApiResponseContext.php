@@ -374,7 +374,6 @@ abstract class AbstractApiResponseContext implements Context
                 $val = $this->getOrCastValue($val);
             }
             $searchResult = \JmesPath\Env::search($key, $response);
-            error_log("res" . $searchResult);
 
             if ($searchResult !== $val) {
                 throw new Exception(sprintf("Key %s not found.", $val));
