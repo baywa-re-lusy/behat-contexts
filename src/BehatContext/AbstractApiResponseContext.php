@@ -368,14 +368,17 @@ abstract class AbstractApiResponseContext implements Context
     public function theResponseShouldBeAJsonObjectContaining(TableNode $expectedObject): void
     {
         /** @var string[] $response */
-        $response = $this->getLastResponseJsonDataAsArray();
-
-        foreach ($expectedObject->getRows() as $row) {
-            if (!array_key_exists($row[0], $response)) {
-                throw new Exception(sprintf("Key %s not found.", $row[0]));
+        $response = ($this->getLastResponseJsonDataAsArray());
+        foreach ($expectedObject->getRowsHash() as $key => $val) {
+            if (is_string($val)) {
+                $val = $this->getOrCastValue($val);
             }
+            $searchResult = \JmesPath\Env::search($key, $response);
+            error_log("res" . $searchResult);
 
-            $this->checkValue($row[0], $row[1], $response[$row[0]]);
+            if ($searchResult !== $val) {
+                throw new Exception(sprintf("Key %s not found.", $val));
+            }
         }
     }
 
