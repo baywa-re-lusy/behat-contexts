@@ -144,7 +144,7 @@ class HalContext extends AbstractApiResponseContext
 
         if ($this->collectionContainsResource($collection, $expectedResource)) {
             throw new \Exception(sprintf(
-                "Resource shouldn't have been found -> %s : %s",
+                "Resource shouldn't have been found -> %s: %s",
                 $expectedResource->getRow(0)[0],
                 $expectedResource->getRow(0)[1],
             ));
