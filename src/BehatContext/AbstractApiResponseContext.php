@@ -41,8 +41,8 @@ abstract class AbstractApiResponseContext implements Context
     protected ?string $bearerToken = null;
 
     /**
-     * The query string to add (in URI Template format).
-     * @var string[]
+     * List of [name, value] query string pairs to add to the request (in insertion order, duplicates allowed).
+     * @var array<int, array{0: string, 1: string}>
      */
     protected array $queryString = [];
 
@@ -185,7 +185,7 @@ abstract class AbstractApiResponseContext implements Context
     }
 
     /**
-     * @return string[]
+     * @return array<int, array{0: string, 1: string}>
      */
     public function getQueryString(): array
     {
@@ -205,7 +205,22 @@ abstract class AbstractApiResponseContext implements Context
      */
     public function queryStringParameterWithValue(string $name, string $value): void
     {
-        $this->queryString[$name] = $value;
+        $this->queryString[] = [$name, $value];
+    }
+
+    /**
+     * Builds a raw query string, preserving duplicate keys (e.g. status[]=a&status[]=b),
+     * which Guzzle's associative-array query building can't express.
+     */
+    protected function buildQueryString(): string
+    {
+        $parts = [];
+
+        foreach ($this->queryString as [$name, $value]) {
+            $parts[] = rawurlencode($name) . '=' . rawurlencode($value);
+        }
+
+        return implode('&', $parts);
     }
 
     /**
@@ -439,7 +454,7 @@ abstract class AbstractApiResponseContext implements Context
             'headers'     => $headers,
             'verify'      => false,
             'http_errors' => false,
-            'query'       => $this->getQueryString(),
+            'query'       => $this->buildQueryString(),
         ];
 
         // Add data to http body
