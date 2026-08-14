@@ -368,7 +368,8 @@ abstract class AbstractApiResponseContext implements Context
     public function theResponseShouldBeAJsonObjectContaining(TableNode $expectedObject): void
     {
         /** @var string[] $response */
-        $response = ($this->getLastResponseJsonDataAsArray());
+        $response = $this->getLastResponseJsonDataAsArray();
+
         foreach ($expectedObject->getRowsHash() as $key => $val) {
             if (is_string($val)) {
                 $val = $this->getOrCastValue($val);
