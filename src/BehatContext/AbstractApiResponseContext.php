@@ -370,12 +370,15 @@ abstract class AbstractApiResponseContext implements Context
         /** @var string[] $response */
         $response = $this->getLastResponseJsonDataAsArray();
 
-        foreach ($expectedObject->getRows() as $row) {
-            if (!array_key_exists($row[0], $response)) {
-                throw new Exception(sprintf("Key %s not found.", $row[0]));
+        foreach ($expectedObject->getRowsHash() as $key => $val) {
+            if (is_string($val)) {
+                $val = $this->getOrCastValue($val);
             }
+            $searchResult = \JmesPath\Env::search($key, $response);
 
-            $this->checkValue($row[0], $row[1], $response[$row[0]]);
+            if ($searchResult !== $val) {
+                throw new Exception(sprintf("Key %s not found.", $val));
+            }
         }
     }
 
@@ -552,6 +555,10 @@ abstract class AbstractApiResponseContext implements Context
             $value = true;
         } elseif ($value === 'false') {
             $value = false;
+        } elseif ($value === 'null') {
+            $value = null;
+        } elseif (is_numeric($value)) {
+            $value = str_contains($value, '.') ? (float)$value : (int)$value;
         } elseif (str_starts_with($value, 'file://')) {
             $value = file_get_contents($this->getJsonFilesPath() . DIRECTORY_SEPARATOR . substr($value, 7));
         }
