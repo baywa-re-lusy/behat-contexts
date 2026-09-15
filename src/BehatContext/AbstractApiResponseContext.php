@@ -615,4 +615,28 @@ abstract class AbstractApiResponseContext implements Context
 
         return false;
     }
+
+    /**
+     * @Then response body should be of Content Type :contentType with content :body
+     */
+    public function responseBodyShouldBeOfContentTypeWithContent(string $contentType, string $body)
+    {
+        $lastResponse = $this->getLastResponse();
+
+        // Check content type
+        $contentTypeHeader = $lastResponse->getHeaderLine('Content-Type');
+        if ($contentTypeHeader !== $contentType) {
+            throw new \Exception('Invalid Content Type returned.');
+        }
+
+        if (str_starts_with($body, 'file://')) {
+            $body = rtrim(file_get_contents(getcwd() . '/features/files/' . substr($body, 7)), "\n");
+        }
+
+        $responseContent = rtrim($this->getLastResponseJsonDataRaw(), "\n");
+
+        if ($body !== $responseContent) {
+            throw new \Exception('Invalid Body returned.');
+        }
+    }
 }
