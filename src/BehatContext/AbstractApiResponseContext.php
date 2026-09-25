@@ -657,7 +657,7 @@ abstract class AbstractApiResponseContext implements Context
         }
 
         if (str_starts_with($body, 'file://')) {
-            $body = rtrim(file_get_contents(getcwd() . '/features/files/' . substr($body, 7)), "\n");
+            $body = rtrim(file_get_contents(getcwd() . '/features/_files/' . substr($body, 7)), "\n");
         }
 
         $responseContent = rtrim($this->getLastResponseJsonDataRaw(), "\n");
