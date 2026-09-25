@@ -382,17 +382,37 @@ abstract class AbstractApiResponseContext implements Context
      */
     public function theResponseShouldBeAJsonObjectContaining(TableNode $expectedObject): void
     {
-        /** @var string[] $response */
         $response = $this->getLastResponseJsonDataAsArray();
 
-        foreach ($expectedObject->getRowsHash() as $key => $val) {
-            if (is_string($val)) {
-                $val = $this->getOrCastValue($val);
-            }
-            $searchResult = \JmesPath\Env::search($key, $response);
+        foreach ($expectedObject->getRowsHash() as $path => $expected) {
+            $actual = \JmesPath\Env::search($path, $response);
 
-            if ($searchResult != $val) {
-                throw new Exception(sprintf("Key %s not found.", var_export($val, true)));
+            if (is_string($expected) && str_starts_with($expected, 'match://')) {
+                $pattern = substr($expected, 8);
+
+                if (!is_scalar($actual) || preg_match($pattern, (string) $actual) !== 1) {
+                    throw new Exception(sprintf(
+                        'Value %s at "%s" doesn\'t match regexp %s.',
+                        var_export($actual, true),
+                        $path,
+                        $pattern
+                    ));
+                }
+
+                continue;
+            }
+
+            if (is_string($expected)) {
+                $expected = $this->getOrCastValue($expected);
+            }
+
+            if ($actual != $expected) {
+                throw new Exception(sprintf(
+                    'Wrong value at "%s": expected %s, got %s.',
+                    $path,
+                    var_export($expected, true),
+                    var_export($actual, true)
+                ));
             }
         }
     }
