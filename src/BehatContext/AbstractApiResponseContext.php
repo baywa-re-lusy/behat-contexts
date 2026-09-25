@@ -391,8 +391,8 @@ abstract class AbstractApiResponseContext implements Context
             }
             $searchResult = \JmesPath\Env::search($key, $response);
 
-            if ($searchResult !== $val) {
-                throw new Exception(sprintf("Key %s not found.", $val));
+            if ($searchResult != $val) {
+                throw new Exception(sprintf("Key %s not found.", var_export($val, true)));
             }
         }
     }
