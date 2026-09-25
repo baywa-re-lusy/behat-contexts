@@ -41,8 +41,8 @@ abstract class AbstractApiResponseContext implements Context
     protected ?string $bearerToken = null;
 
     /**
-     * The query string to add (in URI Template format).
-     * @var string[]
+     * List of [name, value] query string pairs to add to the request (in insertion order, duplicates allowed).
+     * @var array<int, array{0: string, 1: string}>
      */
     protected array $queryString = [];
 
@@ -185,7 +185,7 @@ abstract class AbstractApiResponseContext implements Context
     }
 
     /**
-     * @return string[]
+     * @return array<int, array{0: string, 1: string}>
      */
     public function getQueryString(): array
     {
@@ -205,7 +205,22 @@ abstract class AbstractApiResponseContext implements Context
      */
     public function queryStringParameterWithValue(string $name, string $value): void
     {
-        $this->queryString[$name] = $value;
+        $this->queryString[] = [$name, $value];
+    }
+
+    /**
+     * Builds a raw query string, preserving duplicate keys (e.g. status[]=a&status[]=b),
+     * which Guzzle's associative-array query building can't express.
+     */
+    protected function buildQueryString(): string
+    {
+        $parts = [];
+
+        foreach ($this->queryString as [$name, $value]) {
+            $parts[] = rawurlencode($name) . '=' . rawurlencode($value);
+        }
+
+        return implode('&', $parts);
     }
 
     /**
@@ -367,17 +382,44 @@ abstract class AbstractApiResponseContext implements Context
      */
     public function theResponseShouldBeAJsonObjectContaining(TableNode $expectedObject): void
     {
-        /** @var string[] $response */
         $response = $this->getLastResponseJsonDataAsArray();
 
-        foreach ($expectedObject->getRowsHash() as $key => $val) {
-            if (is_string($val)) {
-                $val = $this->getOrCastValue($val);
-            }
-            $searchResult = \JmesPath\Env::search($key, $response);
+        foreach ($expectedObject->getRowsHash() as $path => $expected) {
+            $actual = \JmesPath\Env::search($path, $response);
 
-            if ($searchResult !== $val) {
-                throw new Exception(sprintf("Key %s not found.", $val));
+            if (is_string($expected) && str_starts_with($expected, 'match://')) {
+                $pattern = substr($expected, 8);
+
+                if (!is_scalar($actual) || preg_match($pattern, (string) $actual) !== 1) {
+                    throw new Exception(sprintf(
+                        'Value %s at "%s" doesn\'t match regexp %s.',
+                        var_export($actual, true),
+                        $path,
+                        $pattern
+                    ));
+                }
+
+                continue;
+            }
+
+            if ($expected === '') {
+                $expected = null;
+            } elseif (is_string($expected)) {
+                $expected = $this->getOrCastValue($expected);
+
+                // JmesPath returns associative arrays; normalize decoded objects to match
+                if (is_object($expected) || is_array($expected)) {
+                    $expected = json_decode(json_encode($expected), true);
+                }
+            }
+
+            if ($actual != $expected) {
+                throw new Exception(sprintf(
+                    'Wrong value at "%s": expected %s, got %s.',
+                    $path,
+                    var_export($expected, true),
+                    var_export($actual, true)
+                ));
             }
         }
     }
@@ -439,7 +481,7 @@ abstract class AbstractApiResponseContext implements Context
             'headers'     => $headers,
             'verify'      => false,
             'http_errors' => false,
-            'query'       => $this->getQueryString(),
+            'query'       => $this->buildQueryString(),
         ];
 
         // Add data to http body
@@ -599,5 +641,29 @@ abstract class AbstractApiResponseContext implements Context
         }
 
         return false;
+    }
+
+    /**
+     * @Then response body should be of Content Type :contentType with content :body
+     */
+    public function responseBodyShouldBeOfContentTypeWithContent(string $contentType, string $body)
+    {
+        $lastResponse = $this->getLastResponse();
+
+        // Check content type
+        $contentTypeHeader = $lastResponse->getHeaderLine('Content-Type');
+        if ($contentTypeHeader !== $contentType) {
+            throw new \Exception('Invalid Content Type returned.');
+        }
+
+        if (str_starts_with($body, 'file://')) {
+            $body = rtrim(file_get_contents(getcwd() . '/features/_files/' . substr($body, 7)), "\n");
+        }
+
+        $responseContent = rtrim($this->getLastResponseJsonDataRaw(), "\n");
+
+        if ($body !== $responseContent) {
+            throw new \Exception('Invalid Body returned.');
+        }
     }
 }
