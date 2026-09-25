@@ -402,8 +402,15 @@ abstract class AbstractApiResponseContext implements Context
                 continue;
             }
 
-            if (is_string($expected)) {
+            if ($expected === '') {
+                $expected = null;
+            } elseif (is_string($expected)) {
                 $expected = $this->getOrCastValue($expected);
+
+                // JmesPath returns associative arrays; normalize decoded objects to match
+                if (is_object($expected) || is_array($expected)) {
+                    $expected = json_decode(json_encode($expected), true);
+                }
             }
 
             if ($actual != $expected) {
