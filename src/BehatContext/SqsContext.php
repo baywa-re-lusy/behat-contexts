@@ -228,18 +228,10 @@ class SqsContext implements Context
                 continue;
             }
 
-            foreach ($table->getRows() as $row) {
-                if ($row[1] === 'false') {
-                    $row[1] = false;
-                } elseif ($row[1] === 'true') {
-                    $row[1] = true;
-                } elseif ($row[1] === 'null') {
-                    $row[1] = null;
-                } elseif (preg_match('/^\{env:\/\/([A-Za-z0-9_]+)\}$/', $row[1], $matches)) {
-                    $row[1] = getenv($matches[1]);
-                }
-
-                if ($messageContent[$row[0]] != $row[1]) {
+            foreach ($table->getRows() as [$key, $expected]) {
+                if (!array_key_exists($key, $messageContent)
+                    || !$this->queueValueMatches($messageContent[$key], $expected)
+                ) {
                     continue 2;
                 }
             }
@@ -248,6 +240,24 @@ class SqsContext implements Context
         }
 
         throw new Exception(sprintf("Message not found in queue '%s'.", $queueName));
+    }
+
+    private function queueValueMatches(mixed $actual, string $expected): bool
+    {
+        // Regex: /pattern/ with optional flags, e.g. /^SO-PI-\d{4}-\d{6}$/i
+        if (preg_match('#^/.+/[a-zA-Z]*$#', $expected)) {
+            return is_scalar($actual) && preg_match($expected, (string) $actual) === 1;
+        }
+
+        $expected = match (true) {
+            $expected === 'false' => false,
+            $expected === 'true' => true,
+            $expected === 'null' => null,
+            (bool) preg_match('/^\{env:\/\/([A-Za-z0-9_]+)\}$/', $expected, $m) => getenv($m[1]),
+            default => $expected,
+        };
+
+        return $actual == $expected;
     }
 
     /**
@@ -281,7 +291,7 @@ class SqsContext implements Context
 
         foreach ($this->queueMessages[$queueName] as $messageContent) {
             foreach ($table->getRows() as $row) {
-                if ($messageContent[$row[0]] != $row[1]) {
+                if (!array_key_exists($row[0], $messageContent) || $messageContent[$row[0]] != $row[1]) {
                     continue 2;
                 }
             }
