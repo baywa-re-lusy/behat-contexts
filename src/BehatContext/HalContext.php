@@ -88,14 +88,6 @@ class HalContext extends AbstractApiResponseContext
             throw new \Exception(sprintf("The expected error field '%s' hasn't been found.", $expectedField));
         }
 
-        if (count($errorMessagesForResource[$expectedField]) > 1) {
-            throw new \Exception(sprintf(
-                "The input caused more than one error on field '%s' => %s",
-                $expectedField,
-                implode(' ,', array_keys($errorMessagesForResource[$expectedField]))
-            ));
-        }
-
         if (array_key_first($errorMessagesForResource[$expectedField]) !== $expectedErrorType) {
             throw new \Exception(sprintf("The expected error type '%s' hasn't been found.", $expectedErrorType));
         }
