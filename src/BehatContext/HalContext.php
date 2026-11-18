@@ -77,13 +77,6 @@ class HalContext extends AbstractApiResponseContext
         string $expectedField,
         string $expectedErrorType
     ): void {
-        if (count($errorMessagesForResource) > 1) {
-            throw new \Exception(sprintf(
-                "The input caused errors on more than one field : %s.",
-                implode(' ,', array_keys($errorMessagesForResource))
-            ));
-        }
-
         if (array_key_first($errorMessagesForResource) !== $expectedField) {
             throw new \Exception(sprintf("The expected error field '%s' hasn't been found.", $expectedField));
         }
